@@ -1,39 +1,47 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "LAM V3 | PREMIUM FARM",
-   LoadingTitle = "Checking Level...",
+   Name = "LAM V3 | FIX ATTACK",
+   LoadingTitle = "ລໍຖ້າການເຊື່ອມຕໍ່...",
    LoadingSubtitle = "by LAM THAN PHANNORLITH",
    ConfigurationSaving = { Enabled = false }
 })
 
--- Variables
 _G.AutoFarm = false
-_G.FastAttack = true
+_G.Weapon = "Combat" -- ປ່ຽນຊື່ດາບ ຫຼື ໝັດ ທີ່ເຈົ້າໃຊ້ຢູ່ບ່ອນນີ້
 
--- Function: ຮັບ Quest ແລະ ຫາຊື່ມອນເຕີຕາມເວວ
+-- ຟັງຊັນຖືອາວຸດອັດຕະໂນມັດ
+function EquipWeapon()
+    pcall(function()
+        if game.Players.LocalPlayer.Backpack:FindFirstChild(_G.Weapon) then
+            local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(_G.Weapon)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+        end
+    end)
+end
+
+-- ຟັງຊັນຮັບ Quest ຕາມ Level
 function GetQuest()
     local lvl = game.Players.LocalPlayer.Data.Level.Value
     if lvl >= 1 and lvl < 10 then
         return "BanditQuest1", "Bandit", "Bandit Quest Giver"
     elseif lvl >= 10 and lvl < 15 then
-        return "BanditQuest2", "Monkey", "Monkey Quest Giver" -- ປ່ຽນຕາມຊື່ໃນເກມ
+        return "BanditQuest2", "Monkey", "Monkey Quest Giver"
     else
-        return "BanditQuest1", "Bandit", "Bandit Quest Giver" -- ເລີ່ມຕົ້ນ
+        return "BanditQuest1", "Bandit", "Bandit Quest Giver"
     end
 end
 
 local Tab = Window:CreateTab("Auto Farm", 4483362458)
-local Section = Tab:CreateSection("Leveling")
 
 Tab:CreateToggle({
-   Name = "Auto Farm + Auto Quest",
+   Name = "Start Auto Farm (ຕີອັດຕະໂນມັດ)",
    CurrentValue = false,
    Callback = function(Value)
       _G.AutoFarm = Value
       spawn(function()
          while _G.AutoFarm do
-            task.wait(0.1)
+            task.wait()
             pcall(function()
                local qName, mName, nName = GetQuest()
                
@@ -51,14 +59,15 @@ Tab:CreateToggle({
                      if v.Name == mName and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
                         repeat
                            task.wait()
-                           -- ວາບໄປລັອກເປົ້າໝາຍ (Safe Distance)
-                           game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
+                           EquipWeapon() -- ຖືອາວຸດອັດຕະໂນມັດ
                            
-                           -- Fast Attack (ຕີລົວໆ)
-                           if _G.FastAttack then
-                              game:GetService("VirtualUser"):CaptureController()
-                              game:GetService("VirtualUser"):ClickButton1(Vector2.new(851, 158))
-                           end
+                           -- ວາບໄປລັອກເປົ້າໝາຍ (Safe Farm)
+                           game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                           
+                           -- ລະບົບຕີແບບ Fast Attack (ໃຊ້ Remote ເພື່ອຄວາມໄວ)
+                           game:GetService("ReplicatedStorage").Remotes.Validator:FireServer(math.huge)
+                           game:GetService("VirtualUser"):CaptureController()
+                           game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
                         until not _G.AutoFarm or v.Humanoid.Health <= 0 or not game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible
                      end
                   end
@@ -69,10 +78,11 @@ Tab:CreateToggle({
    end,
 })
 
-Tab:CreateToggle({
-   Name = "Fast Attack (ຕີໄວ)",
-   CurrentValue = true,
-   Callback = function(Value)
-      _G.FastAttack = Value
+Tab:CreateInput({
+   Name = "ຊື່ມີດ/ໝັດ (Weapon Name)",
+   PlaceholderText = "Combat / Melee / Katana",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      _G.Weapon = Text
    end,
 })
