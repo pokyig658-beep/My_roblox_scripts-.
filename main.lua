@@ -1,81 +1,106 @@
--- LAM V3 HACKER EDITION - ANTI-FLY & SMOOTH FARM
+-- LAM V3 - AUTO CLICK FIX
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "LAM V3 | HACKER HUB",
-   LoadingTitle = "ກຳລັງ Bypass ລະບົບປ້ອງກັນ...",
+   Name = "LAM V3 | AUTO CLICK FIX",
+   LoadingTitle = "ກຳລັງເປີດລະບົບຈຳລອງການຄລິກ...",
    LoadingSubtitle = "by LAM THAN PHANNORLITH",
    ConfigurationSaving = { Enabled = false }
 })
 
--- -- -- SETTINGS -- -- --
+local TweenService = game:GetService("TweenService")
 _G.AutoFarm = false
-_G.Weapon = "Combat" -- ພິມຊື່ມີດ/ໝັດ (COMBAT)
-_G.FarmDistance = 5 -- ໄລຍະຫ່າງຈາກມອນເຕີ (ປ້ອງກັນການບິນ)
+_G.Weapon = "Combat" -- ປ່ຽນຕາມຊື່ທີ່ເຈົ້າໃຊ້
+_G.TweenSpeed = 250
+_G.Distance = 5 -- ໄລຍະການຕີ (ປັບໃຫ້ໃກ້ຂຶ້ນເພື່ອໃຫ້ຕີຮອດ)
 
--- -- -- HACKER FUNCTIONS -- -- --
+-- ຟັງຊັນວາບນິ້ມນວນ (ປ້ອງກັນບິນ)
+function SmoothTween(targetCFrame)
+    local Character = game.Players.LocalPlayer.Character
+    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local RootPart = Character.HumanoidRootPart
+    local Distance = (RootPart.Position - targetCFrame.Position).Magnitude
+    local Duration = Distance / _G.TweenSpeed
+    
+    local tweenInfo = TweenInfo.new(Duration, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(RootPart, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+    tween.Completed:Wait()
+end
 
--- ຟັງຊັນຖືອາວຸດອັດຕະໂນມັດ
+-- ຟັງຊັນຖືອາວຸດ (ແບບບັງຄັບຖື)
 function EquipWeapon()
     pcall(function()
-        local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(_G.Weapon) or game.Players.LocalPlayer.Character:FindFirstChild(_G.Weapon)
-        if tool and not game.Players.LocalPlayer.Character:FindFirstChild(tool.Name) then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+        for _, tool in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and string.find(string.lower(tool.Name), string.lower(_G.Weapon)) then
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+            end
         end
     end)
 end
 
--- ຟັງຊັນວາບແບບນິ້ມນວນ (Smooth Tween) - ປ້ອງກັນການບິນຂຶ້ນຟ້າ
-function SmoothTween(targetCFrame)
-    local Character = game.Players.LocalPlayer.Character
-    if Character and Character:FindFirstChild("HumanoidRootPart") then
-        Character.HumanoidRootPart.CFrame = targetCFrame
-    end
-end
-
--- -- -- MAIN TABS -- -- --
 local Tab = Window:CreateTab("Auto Farm", 4483362458)
 
 Tab:CreateToggle({
-   Name = "Start God Farm (ຕີລົວໆ + ບໍ່ບິນ)",
+   Name = "Start Farm (ຕີແນ່ນອນ 100%)",
    CurrentValue = false,
    Callback = function(Value)
       _G.AutoFarm = Value
       
+      -- Loop ທີ 1: ວາບໄປຫາເປົ້າໝາຍ
       spawn(function()
          while _G.AutoFarm do
-            task.wait(0.1)
+            task.wait()
             pcall(function()
                local questGui = game.Players.LocalPlayer.PlayerGui.Main.Quest
                
-               -- 1. ຮັບ Quest (Bandit ເທົ່ານັ້ນສຳລັບເວວເຈົ້າ)
                if not questGui.Visible then
+                  -- ຮັບເຄສ
                   local npc = game.Workspace.NPCs:FindFirstChild("Bandit Quest Giver")
                   if npc then
-                     SmoothTween(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
+                     SmoothTween(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
                      task.wait(0.5)
                      game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
                   end
                else
-                  -- 2. ວາບໄປຕີມອນເຕີ (ແບບລັອກເປົ້າໝາຍ)
+                  -- ວາບໄປຫາມອນເຕີ
                   for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
                      if v.Name == "Bandit" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
                         repeat
                            task.wait()
                            EquipWeapon()
+                           -- ລັອກເປົ້າໝາຍໃຫ້ຢູ່ທາງໜ້າພໍດີ (ໄລຍະ 5)
+                           SmoothTween(v.HumanoidRootPart.CFrame * CFrame.new(0, 0, _G.Distance))
                            
-                           -- ລັອກຕຳແໜ່ງໃຫ້ຢູ່ "ໃຕ້ທ້ອງ" ຫຼື "ທາງໜ້າ" ມອນເຕີ (ບໍ່ໃຫ້ບິນຂຶ້ນຟ້າ)
-                           SmoothTween(v.HumanoidRootPart.CFrame * CFrame.new(0, -_G.FarmDistance, 0) * CFrame.Angles(math.rad(90), 0, 0))
-                           
-                           -- ລະບົບຕີແບບລົວໆ (No Animation)
-                           local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                           if tool then 
-                              tool:Activate() 
-                              game:GetService("ReplicatedStorage").Remotes.Validator:FireServer(math.huge)
-                           end
+                           -- ລັອກໜ້າໃຫ້ຫັນໄປຫາມອນເຕີສະເໝີ
+                           game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.lookAt(
+                               game.Players.LocalPlayer.Character.HumanoidRootPart.Position, 
+                               v.HumanoidRootPart.Position
+                           )
                         until not _G.AutoFarm or v.Humanoid.Health <= 0 or not questGui.Visible
+                        break 
                      end
                   end
+               end
+            end)
+         end
+      end)
+
+      -- Loop ທີ 2: ລະບົບຄລິກອັດຕະໂນມັດ (ຈຳລອງການແຕະໜ້າຈໍ)
+      spawn(function()
+         local VirtualUser = game:GetService("VirtualUser")
+         while _G.AutoFarm do
+            task.wait(0.05) -- ຄວາມໄວໃນການລົວໝັດ
+            pcall(function()
+               local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+               if tool then
+                  -- ສັ່ງໃຫ້ເກມຄລິກໜ້າຈໍເອງ (ຕີແນ່ນອນ)
+                  VirtualUser:CaptureController()
+                  VirtualUser:ClickButton1(Vector2.new(851, 158)) 
+                  
+                  -- ໃຊ້ Remote ຊ່ວຍໃຫ້ດາເມຈເຂົ້າຮອດ Server
+                  game:GetService("ReplicatedStorage").Remotes.Validator:FireServer(math.huge)
                end
             end)
          end
@@ -84,15 +109,7 @@ Tab:CreateToggle({
 })
 
 Tab:CreateInput({
-   Name = "ໃສ່ຊື່ມີດ (ຕົວພິມໃຫຍ່ທັງໝົດ)",
-   PlaceholderText = "COMBAT / KATANA",
+   Name = "ຊື່ມີດ/ໝັດ (ເຊັ່ນ: Combat)",
+   PlaceholderText = "Combat / Katana",
    Callback = function(Text) _G.Weapon = Text end,
-})
-
-Tab:CreateSlider({
-   Name = "ໄລຍະຫ່າງ (Farm Distance)",
-   Range = {1, 15},
-   Increment = 1,
-   CurrentValue = 5,
-   Callback = function(Value) _G.FarmDistance = Value end,
 })
