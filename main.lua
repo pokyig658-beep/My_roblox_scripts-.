@@ -1,441 +1,280 @@
--- LAM HUB | BLOX FRUITS SCRIPT
--- Version: 1.0
--- ສ້າງຂຶ້ນສຳລັບ Auto Farm ຄົບຊຸດ
+-- LAM HUB V2 | BLOX FRUITS
+-- ແກ້ໄຂ Auto Farm ໃຫ້ຕີ Monster ໄດ້ ແລະ ມີປຸ່ມປິດ
 
--- ປ້ອງກັນການຮັນຫຼາຍຄັ້ງ
-if _G.LAM_HUB_LOADED then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "LAM HUB",
-        Text = "ສະຄິບຖືກໂຫຼດແລ້ວ!",
-        Duration = 3
-    })
-    return
-end
-_G.LAM_HUB_LOADED = true
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/refs/heads/main/MainModule"))()
 
--- ສ້າງ GUI
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local VirtualUser = game:GetService("VirtualUser")
+local Window = Library.CreateLib("LAM HUB | BLOX FRUITS", "Ocean")
 
--- ຕົວແປສຳລັບສະຖານະການທຳງານ
-local Settings = {
-    AutoFarm = false,
-    AutoQuest = false,
-    AutoCollect = false,
-    AutoBoss = false,
-    AutoLevel = false,
-    AutoStats = false,
-    Teleport = false,
-    ESP = false,
-    SelectedNPC = "Bandit",
-    SelectedBoss = "Greybeard",
-    FarmRadius = 500,
-    WalkSpeed = 16,
-    JumpPower = 50,
-    SelectedStat = "Melee"
-}
+-- ========== TAB FARM ==========
+local FarmTab = Window:NewTab("Auto Farm")
+local FarmSection = FarmTab:NewSection("Farm Settings")
 
--- ສ້າງ ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "LAM_HUB"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local AutoFarmEnabled = false
+local FarmTarget = "Bandit"
+local FarmRadius = 300
+local AutoQuestEnabled = false
+local AutoCollectEnabled = false
 
--- ສ້າງເມນູຫຼັກ
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
-MainFrame.BackgroundTransparency = 0.1
-MainFrame.Active = true
-MainFrame.Draggable = true
-
--- ເພີ່ມເງົາ
-local Shadow = Instance.new("UICorner")
-Shadow.CornerRadius = UDim.new(0, 12)
-Shadow.Parent = MainFrame
-
--- ແຖບຫົວຂໍ້
-local TitleBar = Instance.new("Frame")
-TitleBar.Parent = MainFrame
-TitleBar.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
-TitleBar.BorderSizePixel = 0
-TitleBar.Size = UDim2.new(1, 0, 0, 40)
-
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 12)
-TitleCorner.Parent = TitleBar
-
-local Title = Instance.new("TextLabel")
-Title.Parent = TitleBar
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "LAM HUB | BLOX FRUITS"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 18
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
-local CloseButton = Instance.new("TextButton")
-CloseButton.Parent = TitleBar
-CloseButton.BackgroundTransparency = 1
-CloseButton.Position = UDim2.new(1, -40, 0, 0)
-CloseButton.Size = UDim2.new(0, 40, 1, 0)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 20
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-    _G.LAM_HUB_LOADED = false
-end)
-
--- ສ້າງ Tab Buttons
-local Tabs = {}
-local TabContents = {}
-
-local TabFrame = Instance.new("Frame")
-TabFrame.Parent = MainFrame
-TabFrame.BackgroundTransparency = 1
-TabFrame.Position = UDim2.new(0, 0, 0, 40)
-TabFrame.Size = UDim2.new(1, 0, 0, 40)
-
-local TabsList = {"Farm", "Boss", "Teleport", "Player", "Settings"}
-
-for i, tabName in ipairs(TabsList) do
-    local TabButton = Instance.new("TextButton")
-    TabButton.Parent = TabFrame
-    TabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    TabButton.BorderSizePixel = 0
-    TabButton.Position = UDim2.new(0, (i-1)*120, 0, 5)
-    TabButton.Size = UDim2.new(0, 110, 0, 30)
-    TabButton.Font = Enum.Font.GothamSemibold
-    TabButton.Text = tabName
-    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabButton.TextSize = 14
-    
-    local TabCorner = Instance.new("UICorner")
-    TabCorner.CornerRadius = UDim.new(0, 6)
-    TabCorner.Parent = TabButton
-    
-    Tabs[tabName] = TabButton
-end
-
--- ສ້າງ Content Frame
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Position = UDim2.new(0, 10, 0, 90)
-ContentFrame.Size = UDim2.new(1, -20, 1, -100)
-
--- Tab: Farm
-local FarmTab = Instance.new("Frame")
-FarmTab.Parent = ContentFrame
-FarmTab.BackgroundTransparency = 1
-FarmTab.Size = UDim2.new(1, 0, 1, 0)
-FarmTab.Visible = true
-TabContents["Farm"] = FarmTab
-
--- Auto Farm Button
-local AutoFarmBtn = Instance.new("TextButton")
-AutoFarmBtn.Parent = FarmTab
-AutoFarmBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 75)
-AutoFarmBtn.Position = UDim2.new(0, 10, 0, 10)
-AutoFarmBtn.Size = UDim2.new(0, 180, 0, 45)
-AutoFarmBtn.Font = Enum.Font.GothamSemibold
-AutoFarmBtn.Text = "Auto Farm: OFF"
-AutoFarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoFarmBtn.TextSize = 16
-
-local AutoFarmCorner = Instance.new("UICorner")
-AutoFarmCorner.CornerRadius = UDim.new(0, 8)
-AutoFarmCorner.Parent = AutoFarmBtn
-
-AutoFarmBtn.MouseButton1Click:Connect(function()
-    Settings.AutoFarm = not Settings.AutoFarm
-    AutoFarmBtn.Text = Settings.AutoFarm and "Auto Farm: ON" or "Auto Farm: OFF"
-    AutoFarmBtn.BackgroundColor3 = Settings.AutoFarm and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(65, 65, 75)
-    
-    if Settings.AutoFarm then
-        startAutoFarm()
-    end
-end)
-
--- Auto Quest Button
-local AutoQuestBtn = Instance.new("TextButton")
-AutoQuestBtn.Parent = FarmTab
-AutoQuestBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 75)
-AutoQuestBtn.Position = UDim2.new(0, 200, 0, 10)
-AutoQuestBtn.Size = UDim2.new(0, 180, 0, 45)
-AutoQuestBtn.Font = Enum.Font.GothamSemibold
-AutoQuestBtn.Text = "Auto Quest: OFF"
-AutoQuestBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoQuestBtn.TextSize = 16
-
-local AutoQuestCorner = Instance.new("UICorner")
-AutoQuestCorner.CornerRadius = UDim.new(0, 8)
-AutoQuestCorner.Parent = AutoQuestBtn
-
-AutoQuestBtn.MouseButton1Click:Connect(function()
-    Settings.AutoQuest = not Settings.AutoQuest
-    AutoQuestBtn.Text = Settings.AutoQuest and "Auto Quest: ON" or "Auto Quest: OFF"
-    AutoQuestBtn.BackgroundColor3 = Settings.AutoQuest and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(65, 65, 75)
-end)
-
--- Farm Radius Slider
-local RadiusLabel = Instance.new("TextLabel")
-RadiusLabel.Parent = FarmTab
-RadiusLabel.BackgroundTransparency = 1
-RadiusLabel.Position = UDim2.new(0, 10, 0, 70)
-RadiusLabel.Size = UDim2.new(0, 200, 0, 25)
-RadiusLabel.Font = Enum.Font.Gotham
-RadiusLabel.Text = "Farm Radius: " .. Settings.FarmRadius
-RadiusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-RadiusLabel.TextSize = 14
-RadiusLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Tab: Boss
-local BossTab = Instance.new("Frame")
-BossTab.Parent = ContentFrame
-BossTab.BackgroundTransparency = 1
-BossTab.Size = UDim2.new(1, 0, 1, 0)
-BossTab.Visible = false
-TabContents["Boss"] = BossTab
-
-local AutoBossBtn = Instance.new("TextButton")
-AutoBossBtn.Parent = BossTab
-AutoBossBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 75)
-AutoBossBtn.Position = UDim2.new(0, 10, 0, 10)
-AutoBossBtn.Size = UDim2.new(0, 180, 0, 45)
-AutoBossBtn.Font = Enum.Font.GothamSemibold
-AutoBossBtn.Text = "Auto Boss: OFF"
-AutoBossBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoBossBtn.TextSize = 16
-
-local AutoBossCorner = Instance.new("UICorner")
-AutoBossCorner.CornerRadius = UDim.new(0, 8)
-AutoBossCorner.Parent = AutoBossBtn
-
-AutoBossBtn.MouseButton1Click:Connect(function()
-    Settings.AutoBoss = not Settings.AutoBoss
-    AutoBossBtn.Text = Settings.AutoBoss and "Auto Boss: ON" or "Auto Boss: OFF"
-    AutoBossBtn.BackgroundColor3 = Settings.AutoBoss and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(65, 65, 75)
-end)
-
--- Tab: Teleport
-local TeleportTab = Instance.new("Frame")
-TeleportTab.Parent = ContentFrame
-TeleportTab.BackgroundTransparency = 1
-TeleportTab.Size = UDim2.new(1, 0, 1, 0)
-TeleportTab.Visible = false
-TabContents["Teleport"] = TeleportTab
-
-local Islands = {"Marine", "Desert", "Snow", "Jungle", "Prison", "Sky", "Volcano"}
-local TeleportBtns = {}
-
-for i, island in ipairs(Islands) do
-    local TeleportBtn = Instance.new("TextButton")
-    TeleportBtn.Parent = TeleportTab
-    TeleportBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 75)
-    TeleportBtn.Position = UDim2.new(0, ((i-1)%3)*130 + 10, 0, math.floor((i-1)/3)*55 + 10)
-    TeleportBtn.Size = UDim2.new(0, 120, 0, 45)
-    TeleportBtn.Font = Enum.Font.GothamSemibold
-    TeleportBtn.Text = "Teleport to\n" .. island
-    TeleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TeleportBtn.TextSize = 12
-    
-    local TeleportCorner = Instance.new("UICorner")
-    TeleportCorner.CornerRadius = UDim.new(0, 8)
-    TeleportCorner.Parent = TeleportBtn
-    
-    TeleportBtn.MouseButton1Click:Connect(function()
-        -- ເພີ່ມໂຄ້ດ Teleport ຕາມຕ້ອງການ
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "LAM HUB",
-            Text = "Teleported to " .. island,
-            Duration = 2
-        })
-    end)
-end
-
--- Tab: Player
-local PlayerTab = Instance.new("Frame")
-PlayerTab.Parent = ContentFrame
-PlayerTab.BackgroundTransparency = 1
-PlayerTab.Size = UDim2.new(1, 0, 1, 0)
-PlayerTab.Visible = false
-TabContents["Player"] = PlayerTab
-
--- WalkSpeed Slider
-local WalkSpeedLabel = Instance.new("TextLabel")
-WalkSpeedLabel.Parent = PlayerTab
-WalkSpeedLabel.BackgroundTransparency = 1
-WalkSpeedLabel.Position = UDim2.new(0, 10, 0, 10)
-WalkSpeedLabel.Size = UDim2.new(0, 200, 0, 25)
-WalkSpeedLabel.Font = Enum.Font.Gotham
-WalkSpeedLabel.Text = "Walk Speed: " .. Settings.WalkSpeed
-WalkSpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-WalkSpeedLabel.TextSize = 14
-WalkSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Tab: Settings
-local SettingsTab = Instance.new("Frame")
-SettingsTab.Parent = ContentFrame
-SettingsTab.BackgroundTransparency = 1
-SettingsTab.Size = UDim2.new(1, 0, 1, 0)
-SettingsTab.Visible = false
-TabContents["Settings"] = SettingsTab
-
--- ESP Button
-local ESPBtn = Instance.new("TextButton")
-ESPBtn.Parent = SettingsTab
-ESPBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 75)
-ESPBtn.Position = UDim2.new(0, 10, 0, 10)
-ESPBtn.Size = UDim2.new(0, 180, 0, 45)
-ESPBtn.Font = Enum.Font.GothamSemibold
-ESPBtn.Text = "ESP: OFF"
-ESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPBtn.TextSize = 16
-
-local ESPCorner = Instance.new("UICorner")
-ESPCorner.CornerRadius = UDim.new(0, 8)
-ESPCorner.Parent = ESPBtn
-
-ESPBtn.MouseButton1Click:Connect(function()
-    Settings.ESP = not Settings.ESP
-    ESPBtn.Text = Settings.ESP and "ESP: ON" or "ESP: OFF"
-    ESPBtn.BackgroundColor3 = Settings.ESP and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(65, 65, 75)
-    
-    if Settings.ESP then
-        startESP()
-    else
-        stopESP()
-    end
-end)
-
--- ຟັງຊັນສຳລັບ Auto Farm
-local farmConnection
-function startAutoFarm()
-    if farmConnection then farmConnection:Disconnect() end
-    
-    farmConnection = RunService.RenderStepped:Connect(function()
-        if not Settings.AutoFarm then return end
-        
-        -- ຊອກຫາ NPC ທີ່ໃກ້ທີ່ສຸດ
-        local nearestNPC = nil
-        local shortestDistance = math.huge
-        
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("Head") then
-                if v.Name:find("Bandit") or v.Name:find("Pirate") or v.Name:find("Marine") then
-                    local distance = (v.Head.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                    if distance < Settings.FarmRadius and distance < shortestDistance then
-                        shortestDistance = distance
-                        nearestNPC = v
+-- Auto Farm Toggle
+FarmSection:NewToggle("Auto Farm", "ຕີ Monster ອັດຕະໂນມັດ", function(state)
+    AutoFarmEnabled = state
+    if AutoFarmEnabled then
+        -- ເລີ່ມ Auto Farm
+        spawn(function()
+            while AutoFarmEnabled do
+                wait(0.1)
+                local player = game.Players.LocalPlayer
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    -- ຊອກຫາ Monster
+                    local closestMonster = nil
+                    local closestDist = FarmRadius
+                    
+                    for _, v in pairs(workspace.Enemies:GetChildren()) do
+                        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                            if v.Name:lower():find(FarmTarget:lower()) or FarmTarget == "All" then
+                                local dist = (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                                if dist < closestDist then
+                                    closestDist = dist
+                                    closestMonster = v
+                                end
+                            end
+                        end
+                    end
+                    
+                    -- ຕີ Monster
+                    if closestMonster then
+                        player.Character.HumanoidRootPart.CFrame = closestMonster.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                        wait(0.2)
+                        -- ໃຊ້ອາວຸດ
+                        local args = {
+                            [1] = closestMonster.HumanoidRootPart.Position,
+                            [2] = closestMonster
+                        }
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("click", args)
                     end
                 end
             end
-        end
-        
-        if nearestNPC and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- ເຄື່ອນໄປຫາ NPC
-            LocalPlayer.Character.HumanoidRootPart.CFrame = nearestNPC.Head.CFrame
-            -- ໂຈມຕີ
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-            wait(0.1)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-        end
-    end)
-end
-
--- ຟັງຊັນສຳລັບ ESP
-local espObjects = {}
-function startESP()
-    stopESP()
-    
-    local espLoop = RunService.RenderStepped:Connect(function()
-        if not Settings.ESP then return end
-        
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("Head") then
-                if v ~= LocalPlayer.Character and not espObjects[v] then
-                    local billboard = Instance.new("BillboardGui")
-                    billboard.Name = "ESP_LAM"
-                    billboard.Adornee = v.Head
-                    billboard.Size = UDim2.new(0, 100, 0, 30)
-                    billboard.StudsOffset = Vector3.new(0, 2, 0)
-                    billboard.Parent = v.Head
-                    
-                    local label = Instance.new("TextLabel")
-                    label.Parent = billboard
-                    label.BackgroundTransparency = 1
-                    label.Size = UDim2.new(1, 0, 1, 0)
-                    label.Text = v.Name
-                    label.TextColor3 = Color3.fromRGB(255, 0, 0)
-                    label.TextScaled = true
-                    label.Font = Enum.Font.GothamBold
-                    
-                    espObjects[v] = billboard
-                end
-            end
-        end
-    end)
-    
-    table.insert(espObjects, espLoop)
-end
-
-function stopESP()
-    for obj, billboard in pairs(espObjects) do
-        if billboard and billboard:IsA("BillboardGui") then
-            billboard:Destroy()
-        end
+        end)
     end
-    for _, connection in ipairs(espObjects) do
-        if type(connection) == "thread" or connection:IsA("RBXScriptConnection") then
-            connection:Disconnect()
-        end
-    end
-    espObjects = {}
-end
-
--- ປ່ຽນແທັບ
-for tabName, tabButton in pairs(Tabs) do
-    tabButton.MouseButton1Click:Connect(function()
-        for _, content in pairs(TabContents) do
-            content.Visible = false
-        end
-        TabContents[tabName].Visible = true
-        
-        for _, btn in pairs(Tabs) do
-            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        end
-        tabButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
-    end)
-end
-
--- ເລີ່ມຕົ້ນໃຫ້ແທັບ Farm ເປັນຄ່າເລີ່ມຕົ້ນ
-Tabs["Farm"].BackgroundColor3 = Color3.fromRGB(255, 85, 85)
-
--- ການປ້ອງກັນ AFK
-local afkConnection
-afkConnection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
 end)
 
--- Notification
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "LAM HUB",
-    Text = "ສະຄິບຖືກໂຫຼດສຳເລັດ!",
-    Duration = 5
-})
+-- ເລືອກ Monster
+FarmSection:NewDropdown("Monster Target", "ເລືອກ Monster ທີ່ຕ້ອງການຕີ", {"Bandit", "Pirate", "Marine", "Brute", "Diamond", "All"}, function(selected)
+    FarmTarget = selected
+end)
 
-print("LAM HUB Loaded Successfully!")
+-- ປັບໄລຍະການຟາມ
+FarmSection:NewSlider("Farm Radius", "ໄລຍະການຊອກຫາ Monster", 500, 50, function(value)
+    FarmRadius = value
+end)
+
+-- Auto Quest
+FarmSection:NewToggle("Auto Quest", "ຮັບ ແລະ ສົ່ງ Quest ອັດຕະໂນມັດ", function(state)
+    AutoQuestEnabled = state
+    if AutoQuestEnabled then
+        spawn(function()
+            while AutoQuestEnabled do
+                wait(1)
+                -- ຮັບ Quest
+                local args = {
+                    [1] = "StartQuest",
+                    [2] = FarmTarget
+                }
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            end
+        end)
+    end
+end)
+
+-- Auto Collect Items
+FarmSection:NewToggle("Auto Collect", "ເກັບເງິນ ແລະ ໄອເຕັມອັດຕະໂນມັດ", function(state)
+    AutoCollectEnabled = state
+    if AutoCollectEnabled then
+        spawn(function()
+            while AutoCollectEnabled do
+                wait(0.5)
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Tool") or v:IsA("Model") and v.Name:find("Money") or v.Name:find("Chest") then
+                        local player = game.Players.LocalPlayer
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            player.Character.HumanoidRootPart.CFrame = v:GetPivot()
+                            wait(0.2)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- ========== TAB BOSS ==========
+local BossTab = Window:NewTab("Auto Boss")
+local BossSection = BossTab:NewSection("Boss Settings")
+
+local AutoBossEnabled = false
+local SelectedBoss = "Greybeard"
+
+BossSection:NewToggle("Auto Boss", "ລ່າ Boss ອັດຕະໂນມັດ", function(state)
+    AutoBossEnabled = state
+    if AutoBossEnabled then
+        spawn(function()
+            while AutoBossEnabled do
+                wait(0.5)
+                local player = game.Players.LocalPlayer
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    if v.Name:lower():find(SelectedBoss:lower()) and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        if player.Character then
+                            player.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                            wait(0.3)
+                            local args = {
+                                [1] = v.HumanoidRootPart.Position,
+                                [2] = v
+                            }
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("click", args)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+BossSection:NewDropdown("Select Boss", "ເລືອກ Boss ທີ່ຕ້ອງການລ່າ", {"Greybeard", "Diamond", "Thunder God", "Cake Queen", "Don Swan"}, function(selected)
+    SelectedBoss = selected
+end)
+
+-- ========== TAB TELEPORT ==========
+local TeleportTab = Window:NewTab("Teleport")
+local TeleportSection = TeleportTab:NewSection("Island Teleport")
+
+local Islands = {
+    ["Marine Starter"] = CFrame.new(-386, 73, 255),
+    ["Jungle"] = CFrame.new(-1171, 13, 420),
+    ["Desert"] = CFrame.new(889, 22, -11),
+    ["Snow"] = CFrame.new(1200, 38, -1120),
+    ["Sky Island"] = CFrame.new(-478, 208, 439),
+    ["Prison"] = CFrame.new(3515, 12, -1143),
+    ["Volcano"] = CFrame.new(-1481, 66, 725),
+    ["Cake Land"] = CFrame.new(-1766, 40, -2737),
+    ["Sea of Treats"] = CFrame.new(-2708, 63, -2774)
+}
+
+for name, cf in pairs(Islands) do
+    TeleportSection:NewButton(name, "ໂທລະເລີດໄປ " .. name, function()
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = cf
+            Library:Notification("Teleport", "ໄປຫາ " .. name .. " ສຳເລັດ", 2)
+        end
+    end)
+end
+
+-- ========== TAB PLAYER ==========
+local PlayerTab = Window:NewTab("Player")
+local PlayerSection = PlayerTab:NewSection("Player Settings")
+
+-- Walk Speed
+PlayerSection:NewSlider("Walk Speed", "ປັບຄວາມໄວການເດີນ", 300, 16, function(value)
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = value
+    end
+end)
+
+-- Jump Power
+PlayerSection:NewSlider("Jump Power", "ປັບການກະໂດດ", 150, 50, function(value)
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.JumpPower = value
+    end
+end)
+
+-- Auto Stats
+PlayerSection:NewToggle("Auto Stats", "ແຈກສະເຕດອັດຕະໂນມັດໃສ່ Melee/Defense", function(state)
+    if state then
+        spawn(function()
+            while state do
+                wait(2)
+                local args = {
+                    [1] = "AddPoint",
+                    [2] = "Melee",
+                    [3] = 1
+                }
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+            end
+        end)
+    end
+end)
+
+-- ========== TAB SETTINGS ==========
+local SettingsTab = Window:NewTab("Settings")
+local SettingsSection = SettingsTab:NewSection("UI Settings")
+
+-- ESP Toggle
+local ESPEnabled = false
+SettingsSection:NewToggle("ESP Player", "ເບິ່ງຕຳແໜ່ງຜູ້ຫຼິ້ນ ແລະ Monster", function(state)
+    ESPEnabled = state
+    if ESPEnabled then
+        spawn(function()
+            while ESPEnabled do
+                wait(0.5)
+                for _, v in pairs(game.Players:GetChildren()) do
+                    if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+                        if not v.Character.Head:FindFirstChild("ESP_LAM") then
+                            local esp = Instance.new("BillboardGui")
+                            esp.Name = "ESP_LAM"
+                            esp.Adornee = v.Character.Head
+                            esp.Size = UDim2.new(0, 100, 0, 30)
+                            esp.StudsOffset = Vector3.new(0, 2, 0)
+                            esp.Parent = v.Character.Head
+                            
+                            local label = Instance.new("TextLabel")
+                            label.Parent = esp
+                            label.Size = UDim2.new(1, 0, 1, 0)
+                            label.BackgroundTransparency = 1
+                            label.Text = v.Name
+                            label.TextColor3 = Color3.fromRGB(255, 0, 0)
+                            label.TextScaled = true
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        for _, v in pairs(game.Players:GetChildren()) do
+            if v.Character and v.Character.Head:FindFirstChild("ESP_LAM") then
+                v.Character.Head.ESP_LAM:Destroy()
+            end
+        end
+    end
+end)
+
+-- Rejoin Button
+SettingsSection:NewButton("Rejoin Game", "ເຂົ້າເກມໃໝ່", function()
+    game:GetService("TeleportService"):Teleport(game.PlaceId)
+end)
+
+-- Close UI Button
+SettingsSection:NewButton("Close UI", "ປິດເມນູ LAM HUB", function()
+    Library:Unload()
+    Library = nil
+    Window = nil
+end)
+
+-- Anti AFK
+SettingsSection:NewToggle("Anti AFK", "ປ້ອງກັນການຖືກຕັດເນື່ອງຈາກບໍ່ເຄື່ອນໄຫວ", function(state)
+    if state then
+        spawn(function()
+            while state do
+                wait(600)
+                game:GetService("VirtualUser"):CaptureController()
+                game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+            end
+        end)
+    end
+end)
+
+-- Notification ເມື່ອໂຫຼດສຳເລັດ
+Library:Notification("LAM HUB V2", "ໂຫຼດສຳເລັດ! ກົດ Insert ເພື່ອເປີດ/ປິດເມນູ", 5)
+
+print("LAM HUB V2 Loaded Successfully!")
