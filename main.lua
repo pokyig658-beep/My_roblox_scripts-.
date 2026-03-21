@@ -1,41 +1,51 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("LAM V3 - MY UI", "DarkScene")
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Tab ທຳອິດ: "Main"
-local Tab1 = Window:NewTab("Main")
-local Section1 = Tab1:NewSection("Player Mods")
+local Window = Rayfield:CreateWindow({
+   Name = "LAM V3 - BLOX FRUITS",
+   LoadingTitle = "ກຳລັງໂຫຼດສະຄິບ...",
+   LoadingSubtitle = "by LAM THAN PHANNORLITH",
+   ConfigurationSaving = {
+      Enabled = false
+   }
+})
 
-Section1:NewSlider("WalkSpeed", "ປັບຄວາມໄວໃນການຍ່າງ", 500, 16, function(s) -- 500 = Max, 16 = Min
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
-end)
+local Tab = Window:CreateTab("Main Farm", 4483362458)
+local Section = Tab:CreateSection("Farm Settings")
 
-Section1:NewSlider("JumpPower", "ປັບຄວາມສູງໃນການໂດດ", 500, 50, function(s) -- 500 = Max, 50 = Min
-    game.Players.LocalPlayer.Character.Humanoid.JumpPower = s
-end)
+Tab:CreateToggle({
+   Name = "Auto Farm Level",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoFarm = Value
+      while _G.AutoFarm do
+         task.wait()
+         pcall(function()
+            if _G.AutoFarm then
+               -- ລະບົບຊອກຫາມອນເຕີ ແລະ ວາບໄປຫາ
+               for i,v in pairs(game.Workspace.Enemies:GetChildren()) do
+                  if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,0,5)
+                  end
+               end
+            end
+         end)
+      end
+   end,
+})
 
-Section1:NewButton("Infinite Jump", "ໂດດໄດ້ຕະຫຼອດບໍ່ຈຳກັດ", function()
-    local InfiniteJumpEnabled = true
-    game:GetService("UserInputService").JumpRequest:Connect(function()
-        if InfiniteJumpEnabled then
-            game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
-        end
-    end)
-end)
+Tab:CreateSlider({
+   Name = "WalkSpeed (ຄວາມໄວ)",
+   Range = {16, 300},
+   Increment = 1,
+   CurrentValue = 16,
+   Callback = function(Value)
+      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+   end,
+})
 
--- Tab ທີສອງ: "Farm"
-local Tab2 = Window:NewTab("Farm")
-local Section2 = Tab2:NewSection("Auto Farm Options")
-
-Section2:NewToggle("Auto Farm (Demo)", "ຟາມອັດຕະໂນມັດ (ຕົວຢ່າງ)", function(state)
-    if state then
-        print("ເປີດ Auto Farm...")
-        -- ໃສ່ໂຄ້ດ Auto Farm ຂອງເຈົ້າຢູ່ບ່ອນນີ້
-    else
-        print("ປິດ Auto Farm.")
-    end
-end)
-
--- Tab ທີສາມ: "Credits"
-local Tab3 = Window:NewTab("Credits")
-local Section3 = Tab3:NewSection("Created by LAM THAN PHANNORLITH")
-Section3:NewLabel("Support: GitHub/My-Roblox-V3")
+Rayfield:Notify({
+   Title = "Executed!",
+   Content = "ສະຄິບພ້ອມໃຊ້ງານແລ້ວ!",
+   Duration = 5,
+   Image = 4483362458,
+})
