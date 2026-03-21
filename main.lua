@@ -1,27 +1,31 @@
--- LAM V3 ULTRA LIGHT - ANTI-CRASH & AUTO CLICK
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "LAM V3 | FIX ALL BUGS",
-   LoadingTitle = "ກຳລັງຕັ້ງຄ່າລະບົບແບບລື່ນໆ...",
+   Name = "LAM V3 | ALL-IN-ONE HUB",
+   LoadingTitle = "ກຳລັງໂຫຼດລະບົບຟາມທີ່ດີທີ່ສຸດ...",
    LoadingSubtitle = "by LAM THAN PHANNORLITH",
    ConfigurationSaving = { Enabled = false }
 })
 
+-- -- -- VARIABLES -- -- --
 _G.AutoFarm = false
-_G.Weapon = "Combat" -- ພິມຊື່ມີດ/ໝັດ ຂອງເຈົ້າບ່ອນນີ້
+_G.BringMob = true
+_G.FastAttack = true
+_G.AutoEquip = true
+_G.Weapon = "Combat" -- ພິມຊື່ມີດ/ໝັດ ໃນເກມ
 
--- ຟັງຊັນຖືອາວຸດ
+-- -- -- FUNCTIONS -- -- --
 function EquipWeapon()
     pcall(function()
-        local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(_G.Weapon) or game.Players.LocalPlayer.Character:FindFirstChild(_G.Weapon)
-        if tool then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+        if _G.AutoEquip then
+            local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(_G.Weapon) or game.Players.LocalPlayer.Character:FindFirstChild(_G.Weapon)
+            if tool and not game.Players.LocalPlayer.Character:FindFirstChild(tool.Name) then
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+            end
         end
     end)
 end
 
--- ຟັງຊັນຮັບ Quest ຕາມ Level (0-15)
 function GetQuest()
     local lvl = game.Players.LocalPlayer.Data.Level.Value
     if lvl < 10 then return "BanditQuest1", "Bandit", "Bandit Quest Giver"
@@ -29,41 +33,47 @@ function GetQuest()
     else return "BanditQuest1", "Bandit", "Bandit Quest Giver" end
 end
 
-local Tab = Window:CreateTab("Main", 4483362458)
+-- -- -- UI TABS -- -- --
+local MainTab = Window:CreateTab("Farming", 4483362458)
+local Section = MainTab:CreateSection("Main Leveling")
 
-Tab:CreateToggle({
-   Name = "Start Auto Farm (ຕີອັດຕະໂນມັດ)",
+MainTab:CreateToggle({
+   Name = "Auto Farm Level (ຕີ+ຮັບເຄສ)",
    CurrentValue = false,
    Callback = function(Value)
       _G.AutoFarm = Value
-      
-      -- Loop ວາບ ແລະ ຮັບ Quest (ປັບໃຫ້ລື່ນ ບໍ່ໃຫ້ເດ້ງ)
       spawn(function()
          while _G.AutoFarm do
             task.wait(0.1)
             pcall(function()
                local qName, mName, nName = GetQuest()
-               
                if not game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible then
                   -- ວາບໄປຮັບ Quest
                   local npc = game.Workspace.NPCs:FindFirstChild(nName)
-                  if npc then
-                     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
-                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", qName, 1)
-                  end
+                  game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
+                  game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", qName, 1)
                else
-                  -- ວາບໄປຕີມອນເຕີ (Fix ບໍ່ໃຫ້ມອນບິນມົ້ວ)
+                  -- ວາບໄປຕີມອນເຕີ
                   for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
                      if v.Name == mName and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
                         repeat
                            task.wait()
                            EquipWeapon()
-                           -- ວາບໄປລັອກເປົ້າໝາຍຢູ່ເທິງຫົວ (ໄລຍະທີ່ຕີຮອດ)
+                           -- ວາບລັອກເປົ້າໝາຍ (Safe Farm)
                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
                            
-                           -- ສັ່ງໃຫ້ຕີອັດຕະໂນມັດ
-                           local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                           if tool then tool:Activate() end
+                           -- ລວມມອນເຕີ (Fix ບໍ່ໃຫ້ບິນມົ້ວ)
+                           if _G.BringMob then
+                               v.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+                               v.HumanoidRootPart.CanCollide = false
+                           end
+
+                           -- ລະບົບຕີອັດຕະໂນມັດ (Fast Attack)
+                           if _G.FastAttack then
+                               local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                               if tool then tool:Activate() end
+                               game:GetService("ReplicatedStorage").Remotes.Validator:FireServer(math.huge)
+                           end
                         until not _G.AutoFarm or v.Humanoid.Health <= 0 or not game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible
                      end
                   end
@@ -74,8 +84,22 @@ Tab:CreateToggle({
    end,
 })
 
-Tab:CreateInput({
-   Name = "ໃສ່ຊື່ມີດ/ໝັດ (Weapon Name)",
-   PlaceholderText = "Combat / Katana / Melee",
+MainTab:CreateToggle({
+   Name = "Bring Mob (ລວມມອນ)",
+   CurrentValue = true,
+   Callback = function(Value) _G.BringMob = Value end,
+})
+
+MainTab:CreateInput({
+   Name = "ຊື່ມີດ (Weapon)",
+   PlaceholderText = "Combat / Katana",
    Callback = function(Text) _G.Weapon = Text end,
+})
+
+local MiscTab = Window:CreateTab("Misc", 4483362458)
+MiscTab:CreateButton({
+   Name = "Infinity Yield (ສະຄິບແອດມິນ)",
+   Callback = function()
+       loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+   end,
 })
