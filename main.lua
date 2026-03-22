@@ -1,324 +1,110 @@
--- ==================================================
--- LAM HUB V8 | BLOX FRUITS
--- ສະຄິບທີ່ງ່າຍທີ່ສຸດ ສຳລັບທົດສອບ ແລະ ໃຊ້ງານ
--- ຖ້າ UI ບໍ່ຂຶ້ນ ໃຫ້ກວດເບິ່ງຂໍ້ຄວາມໃນ F9 ຫຼື Console
--- ==================================================
-
--- ຂັ້ນຕອນທີ 1: ທົດສອບວ່າ Executor ເຮັດວຽກ
-print("=========================================")
-print("LAM HUB V8 ກຳລັງໂຫຼດ...")
-print("ຖ້າທ່ານເຫັນຂໍ້ຄວາມນີ້ ສະແດງວ່າ Executor ເຮັດວຽກປົກກະຕິ")
-print("=========================================")
-
--- ແຈ້ງເຕືອນທີ່ໜ້າຈໍ
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "LAM HUB V8",
-        Text = "ສະຄິບກຳລັງໂຫຼດ... ລໍຖ້າ 2 ວິນາທີ",
-        Duration = 3
-    })
-end)
-
--- ລໍຖ້າເລັກນ້ອຍ
-wait(2)
-
--- ຂັ້ນຕອນທີ 2: ສ້າງ GUI ແບບງ່າຍທີ່ສຸດ (ບໍ່ມີອົງປະກອບຊັບຊ້ອນ)
-local success, err = pcall(function()
-    -- ລ້າງ GUI ເກົ່າ
-    if game.CoreGui:FindFirstChild("LAM_HUB_V8") then
-        game.CoreGui.LAM_HUB_V8:Destroy()
-    end
-    
-    -- ສ້າງ ScreenGui ຫຼັກ
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "LAM_HUB_V8"
-    gui.Parent = game.CoreGui
-    gui.ResetOnSpawn = false
-    
-    -- ສ້າງ Frame ຫຼັກ (ສີແດງເຂັ້ມ)
-    local main = Instance.new("Frame")
-    main.Parent = gui
-    main.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    main.Position = UDim2.new(0.5, -250, 0.5, -200)
-    main.Size = UDim2.new(0, 500, 0, 400)
-    main.Active = true
-    main.Draggable = true
-    
-    -- ມຸມມົນ
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = main
-    
-    -- ແຖບຫົວຂໍ້
-    local title = Instance.new("Frame")
-    title.Parent = main
-    title.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    title.Size = UDim2.new(1, 0, 0, 40)
-    
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 10)
-    titleCorner.Parent = title
-    
-    local titleText = Instance.new("TextLabel")
-    titleText.Parent = title
-    titleText.BackgroundTransparency = 1
-    titleText.Size = UDim2.new(1, 0, 1, 0)
-    titleText.Font = Enum.Font.GothamBold
-    titleText.Text = "🔥 LAM HUB V8 | BLOX FRUITS"
-    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleText.TextSize = 18
-    
-    -- ປຸ່ມປິດ
-    local close = Instance.new("TextButton")
-    close.Parent = title
-    close.BackgroundTransparency = 1
-    close.Position = UDim2.new(1, -45, 0, 0)
-    close.Size = UDim2.new(0, 45, 1, 0)
-    close.Font = Enum.Font.GothamBold
-    close.Text = "✕"
-    close.TextColor3 = Color3.fromRGB(255, 255, 255)
-    close.TextSize = 22
-    close.MouseButton1Click:Connect(function()
-        gui:Destroy()
-    end)
-    
-    -- ເນື້ອໃນ
-    local content = Instance.new("Frame")
-    content.Parent = main
-    content.BackgroundTransparency = 1
-    content.Position = UDim2.new(0, 10, 0, 50)
-    content.Size = UDim2.new(1, -20, 1, -60)
-    
-    -- ປຸ່ມ Auto Farm
-    local autoFarmBtn = Instance.new("TextButton")
-    autoFarmBtn.Parent = content
-    autoFarmBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-    autoFarmBtn.Position = UDim2.new(0, 0, 0, 10)
-    autoFarmBtn.Size = UDim2.new(1, 0, 0, 45)
-    autoFarmBtn.Font = Enum.Font.GothamBold
-    autoFarmBtn.Text = "🔴 AUTO FARM: OFF"
-    autoFarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    autoFarmBtn.TextSize = 16
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = autoFarmBtn
-    
-    -- ສະຖານະ
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Parent = content
-    statusLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-    statusLabel.Position = UDim2.new(0, 0, 0, 70)
-    statusLabel.Size = UDim2.new(1, 0, 0, 35)
-    statusLabel.Font = Enum.Font.Gotham
-    statusLabel.Text = "✅ ພ້ອມທຳງານ | ຍັງບໍ່ໄດ້ເປີດ Auto Farm"
-    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    statusLabel.TextSize = 12
-    
-    local statusCorner = Instance.new("UICorner")
-    statusCorner.CornerRadius = UDim.new(0, 6)
-    statusCorner.Parent = statusLabel
-    
-    -- ຕົວແປສຳລັບ Auto Farm
-    local autoFarm = false
-    local farmLoop = nil
-    
-    -- ຟັງຊັນໂຈມຕີ
-    local function Attack(target)
-        if not target or not target:FindFirstChild("HumanoidRootPart") then return end
-        local player = game.Players.LocalPlayer
-        if not player.Character then return end
-        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        -- ຍ້າຍໄປໃກ້
-        hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4)
-        wait(0.05)
-        
-        -- ໂຈມຕີ
-        pcall(function()
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("click", target.HumanoidRootPart.Position, target)
-        end)
-        
-        -- ກົດ E
-        local VirtualInput = game:GetService("VirtualInputManager")
-        VirtualInput:SendKeyEvent(true, "E", false, game)
-        wait(0.05)
-        VirtualInput:SendKeyEvent(false, "E", false, game)
-    end
-    
-    -- ຟັງຊັນຊອກ NPC
-    local function GetNearestNPC()
-        local player = game.Players.LocalPlayer
-        if not player.Character then return nil end
-        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
-        
-        local nearest = nil
-        local minDist = 300
-        
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                if v ~= player.Character then
-                    local name = v.Name:lower()
-                    if name:find("bandit") or name:find("pirate") or name:find("marine") then
-                        local dist = (v.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            nearest = v
-                        end
-                    end
-                end
-            end
-        end
-        return nearest
-    end
-    
-    -- ຟັງຊັນ Auto Farm Loop
-    local function StartFarm()
-        if farmLoop then farmLoop:Disconnect() end
-        farmLoop = game:GetService("RunService").RenderStepped:Connect(function()
-            if not autoFarm then return end
-            local target = GetNearestNPC()
-            if target then
-                Attack(target)
-                statusLabel.Text = "⚔️ ກຳລັງຟາມ: " .. target.Name
-                statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            else
-                statusLabel.Text = "🔍 ກຳລັງຊອກຫາ NPC..."
-                statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-            end
-        end)
-    end
-    
-    -- ເຫດການກົດປຸ່ມ
-    autoFarmBtn.MouseButton1Click:Connect(function()
-        autoFarm = not autoFarm
-        if autoFarm then
-            autoFarmBtn.Text = "🟢 AUTO FARM: ON"
-            autoFarmBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
-            statusLabel.Text = "⚔️ ກຳລັງເລີ່ມ Auto Farm..."
-            StartFarm()
-        else
-            autoFarmBtn.Text = "🔴 AUTO FARM: OFF"
-            autoFarmBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-            statusLabel.Text = "✅ ຢຸດ Auto Farm ແລ້ວ"
-            statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            if farmLoop then
-                farmLoop:Disconnect()
-                farmLoop = nil
-            end
-        end
-    end)
-    
-    -- ປຸ່ມ Teleport ງ່າຍໆ
-    local teleLabel = Instance.new("TextLabel")
-    teleLabel.Parent = content
-    teleLabel.BackgroundTransparency = 1
-    teleLabel.Position = UDim2.new(0, 0, 0, 120)
-    teleLabel.Size = UDim2.new(1, 0, 0, 25)
-    teleLabel.Font = Enum.Font.GothamBold
-    teleLabel.Text = "📍 Teleport ໄປຫາເກາະ"
-    teleLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-    teleLabel.TextSize = 14
-    teleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local islands = {
-        {"Marine Starter", CFrame.new(-386, 73, 255)},
-        {"Jungle", CFrame.new(-1171, 13, 420)},
-        {"Desert", CFrame.new(889, 22, -11)},
-        {"Snow", CFrame.new(1200, 38, -1120)},
-        {"Sky Island", CFrame.new(-478, 208, 439)}
+-- [[ LAM V3 - BANANA STYLE FARM ]] --
+getgenv().Config = {
+    Team = "Pirates",
+    FarmConfig = {
+        ["Fast Attack Speed"] = 0.01,
+        ["Farm Distance"] = 8, -- ໄລຍະຫ່າງທີ່ປອດໄພ
+        ["Auto Click"] = true
+    },
+    Items = {
+        ["Weapon Name"] = "Combat" -- ພິມຊື່ມີດ/ໝັດ
     }
-    
-    local yPos = 150
-    for i, data in ipairs(islands) do
-        local btn = Instance.new("TextButton")
-        btn.Parent = content
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-        btn.Position = UDim2.new(0, 0, 0, yPos)
-        btn.Size = UDim2.new(0.48, 0, 0, 35)
-        btn.Font = Enum.Font.Gotham
-        btn.Text = data[1]
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 12
-        
-        local btnCorner2 = Instance.new("UICorner")
-        btnCorner2.CornerRadius = UDim.new(0, 6)
-        btnCorner2.Parent = btn
-        
-        btn.MouseButton1Click:Connect(function()
-            local player = game.Players.LocalPlayer
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = data[2]
-                statusLabel.Text = "✅ ໂທລະເລີດໄປ " .. data[1]
-                statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            end
-        end)
-        
-        -- ຈັດຕຳແໜ່ງ 2 ຖັນ
-        if i % 2 == 0 then
-            yPos = yPos + 40
-        else
-            btn.Position = UDim2.new(0.52, 0, 0, yPos)
-        end
-    end
-    
-    -- ປຸ່ມປິດເມນູ
-    local closeUI = Instance.new("TextButton")
-    closeUI.Parent = content
-    closeUI.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-    closeUI.Position = UDim2.new(0, 0, 0, 340)
-    closeUI.Size = UDim2.new(1, 0, 0, 40)
-    closeUI.Font = Enum.Font.GothamBold
-    closeUI.Text = "❌ ປິດເມນູ"
-    closeUI.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeUI.TextSize = 14
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 8)
-    closeCorner.Parent = closeUI
-    
-    closeUI.MouseButton1Click:Connect(function()
-        gui:Destroy()
-        if farmLoop then farmLoop:Disconnect() end
-        autoFarm = false
-    end)
-    
-    print("✅ UI ສ້າງສຳເລັດ!")
-end)
+}
 
--- ແຈ້ງເຕືອນຜົນການສ້າງ UI
-if success then
-    print("=========================================")
-    print("✅ LAM HUB V8 ໂຫຼດສຳເລັດ!")
-    print("📌 ຖ້າ UI ຍັງບໍ່ຂຶ້ນ ໃຫ້ກົດ F9 ເບິ່ງຂໍ້ຜິດພາດ")
-    print("=========================================")
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+   Name = "LAM V3 | PREMIUM HUB",
+   LoadingTitle = "ກຳລັງ Bypass ລະບົບປ້ອງກັນ...",
+   LoadingSubtitle = "by LAM THAN PHANNORLITH",
+   ConfigurationSaving = { Enabled = false }
+})
+
+-- -- -- HACKER ATTACK SYSTEM (Fast & Smooth) -- -- --
+local function AutoAttack()
     pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "LAM HUB V8",
-            Text = "ໂຫຼດສຳເລັດ! UI ຈະປາກົດທັນທີ",
-            Duration = 5
-        })
-    end)
-else
-    print("❌ ເກີດຂໍ້ຜິດພາດ: " .. tostring(err))
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "LAM HUB V8",
-            Text = "ເກີດຂໍ້ຜິດພາດ: " .. tostring(err):sub(1, 100),
-            Duration = 10
-        })
+        local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            -- ລະບົບຕີແບບບໍ່ມີ Cooldown (Fast Attack)
+            game:GetService("ReplicatedStorage").Remotes.Validator:FireServer(math.huge)
+            game:GetService("VirtualUser"):CaptureController()
+            game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+            
+            -- ສົ່ງ Remote Attack ໃຫ້ Server ຮັບຮູ້
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Attack", tool)
+        end
     end)
 end
 
--- ເພີ່ມປຸ່ມກົດ Insert ເພື່ອປິດ/ເປີດ UI
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.Insert then
-        local gui = game.CoreGui:FindFirstChild("LAM_HUB_V8")
-        if gui then
-            gui.Enabled = not gui.Enabled
-        end
-    end
-end)
+-- -- -- AUTO FARM SYSTEM -- -- --
+local MainTab = Window:CreateTab("Auto Farm", 4483362458)
+
+MainTab:CreateToggle({
+   Name = "Auto Farm Level (ແບບໃນຄລິບ)",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoFarm = Value
+      spawn(function()
+         while _G.AutoFarm do
+            task.wait()
+            pcall(function()
+               local questGui = game.Players.LocalPlayer.PlayerGui.Main.Quest
+               if not questGui.Visible then
+                  -- ຮັບ Quest (Bandit ສຳລັບເວວ 4)
+                  local npc = game.Workspace.NPCs:FindFirstChild("Bandit Quest Giver")
+                  game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
+                  game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+               else
+                  -- ວາບໄປຕີມອນເຕີ
+                  for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                     if v.Name == "Bandit" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        repeat
+                           task.wait()
+                           -- ຖືອາວຸດອັດຕະໂນມັດ
+                           local weaponName = getgenv().Config.Items["Weapon Name"]
+                           local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(weaponName)
+                           if tool then game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool) end
+                           
+                           -- ວາບລັອກເປົ້າໝາຍ (Safe Distance)
+                           local dist = getgenv().Config.FarmConfig["Farm Distance"]
+                           game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, dist, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                           
+                           -- ລວມມອນເຕີແບບບໍ່ໃຫ້ເດ້ງ
+                           v.HumanoidRootPart.CanCollide = false
+                           v.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+
+                           -- ຕີລົວໆ
+                           AutoAttack()
+                        until not _G.AutoFarm or v.Humanoid.Health <= 0 or not questGui.Visible
+                        break
+                     end
+                  end
+               end
+            end)
+         end
+      end)
+   end,
+})
+
+MainTab:CreateInput({
+   Name = "ໃສ່ຊື່ມີດ (Combat / Katana)",
+   PlaceholderText = "Combat",
+   Callback = function(Text) getgenv().Config.Items["Weapon Name"] = Text end,
+})
+
+-- -- -- AUTO STATS SYSTEM -- -- --
+local StatTab = Window:CreateTab("Auto Stats", 4483362458)
+_G.AutoStats = false
+
+StatTab:CreateToggle({
+   Name = "Auto Stats (Melee)",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoStats = Value
+      spawn(function()
+         while _G.AutoStats do
+            task.wait(1)
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Melee", 1)
+         end
+      end)
+   end,
+})
