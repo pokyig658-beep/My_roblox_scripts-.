@@ -1,227 +1,341 @@
--- [[ LAM HUB V17 - BEAR STYLE & FIXED visuals ]]
-local LPlr = game.Players.LocalPlayer
-local Camera = game.Workspace.CurrentCamera
+-- [[ LAM HUB | Ultimate Aimbot & Perfect Lock ]] --
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- [[ 1. HARD BYPASS SYSTEM ( Safe from Kicks ) ]]
-local oldIndex
-oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, index)
-    if not checkcaller() and self:IsA("Humanoid") and (index == "WalkSpeed" or index == "JumpPower") then
-        return 16
-    end
-    return oldIndex(self, index)
-end))
+-- ຕັ້ງຄ່າ Config ຫຼັກ
+local Config = {
+    ShowFOV = false,
+    FovRadius = 150,
+    CameraFOV = 70, 
+    
+    Aimbot = false,
+    HardLock = false, -- ໂໝດລັອກຕິດໜຶບ
+    Smoothness = 0.1,
+    TargetPart = "Head", -- "Head" ຫຼື "HumanoidRootPart"
+    WallCheck = true, -- ກວດສອບກຳແພງ
+    
+    SilentAim = false, 
+    Hitbox = false,
+    Tracers = false
+}
 
--- [[ 2. CONFIG & SETTINGS ]]
-_G.Aimbot = false
-_G.ESP = false
-_G.TracerLines = false
-_G.FullBright = false
-_G.WalkSpeed = 16
-_G.FOVRadius = 120
-_G.ShowFOV = true
+---------------------------------------------------------
+-- 1. ລະບົບ Backend & Drawing
+---------------------------------------------------------
+local hasDrawing = pcall(function() local t = Drawing.new("Line") t:Remove() end)
 
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 1
-FOVCircle.Color = Color3.fromRGB(255, 0, 0)
-FOVCircle.Filled = false -- ** ແກ້ບັກສີແດງທຶບຄືເກົ່າ **
-
--- [[ 3. UI DESIGN (BEAR HUB STYLE) ]]
-local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-local Main = Instance.new("Frame", ScreenGui)
-local Sidebar = Instance.new("Frame", Main) -- ** ແຖບລາຍການເບື້ອງຊ້າຍ **
-local Container = Instance.new("ScrollingFrame", Main) -- ** ພື້ນທີ່ສະແດງປຸ່ມ **
-local Title = Instance.new("TextLabel", Sidebar) -- ** ຊື່ HUB **
-local UIStroke = Instance.new("UIStroke", Main)
-
--- ປຸ່ມ Logo L (ປິດ-ເປີດ)
-local Toggle = Instance.new("TextButton", ScreenGui)
-Toggle.Size = UDim2.new(0, 45, 0, 45)
-Toggle.Position = UDim2.new(0, 20, 0.4, 0)
-Toggle.Text = "L"
-Toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- ສີຂາວເໝືອນ Bear Style
-Toggle.TextColor3 = Color3.new(1, 1, 1) -- ຕົວໜັງສືດຳ
-Instance.new("UICorner", Toggle).CornerRadius = UDim.new(1, 0)
-local ToggleStroke = Instance.new("UIStroke", Toggle)
-ToggleStroke.Color = Color3.fromRGB(255, 255, 255)
-
--- Main Frame (ເບື້ອງຂວາ)
-Main.Size = UDim2.new(0, 450, 0, 300)
-Main.Position = UDim2.new(0.5, -225, 0.5, -150)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Main.Visible = true
-Main.Active = true
-Main.Draggable = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
-UIStroke.Color = Color3.fromRGB(255, 255, 255) -- ຂອບຂາວເໝືອນ Bear Style
-UIStroke.Thickness = 1.5
-
--- Sidebar Design (ແບບໃນຮູບ)
-Sidebar.Size = UDim2.new(0, 120, 1, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
-
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "LAM HUB"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.BackgroundTransparency = 1
-
-local Layout = Instance.new("UIListLayout", Container)
-Layout.Padding = UDim.new(0, 8)
-
--- Container Design
-Container.Size = UDim2.new(1, -130, 1, -10)
-Container.Position = UDim2.new(0, 125, 0, 5)
-Container.BackgroundTransparency = 1
-Container.ScrollBarThickness = 2
-Container.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
-
-Toggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
-
--- --- Helper Functions (Bear Style) ---
-local function CreateSidebarTab(name, iconId)
-    local tab = Instance.new("TextButton", Sidebar)
-    tab.Size = UDim2.new(1, -10, 0, 30)
-    tab.Position = UDim2.new(0, 5, 0, 45 + (#Sidebar:GetChildren()-2)*35)
-    tab.Text = name
-    tab.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    tab.TextColor3 = Color3.new(1, 1, 1)
-    tab.Font = Enum.Font.GothamSemibold
-    tab.TextSize = 12
-    Instance.new("UICorner", tab)
+local FOVCircle
+if hasDrawing then
+    FOVCircle = Drawing.new("Circle")
+    FOVCircle.Thickness = 2
+    FOVCircle.Color = Color3.fromRGB(0, 255, 255)
+    FOVCircle.Filled = false
+    FOVCircle.Transparency = 0.8
+    FOVCircle.Visible = false
 end
 
-local function CreateBtn(name, callback)
-    local btn = Instance.new("TextButton", Container)
-    btn.Size = UDim2.new(1, -10, 0, 38)
-    btn.Text = name
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(function() callback(btn) end)
+local ESP_Lines = {}
+Players.PlayerRemoving:Connect(function(player)
+    if ESP_Lines[player] then ESP_Lines[player]:Remove() ESP_Lines[player] = nil end
+end)
+
+---------------------------------------------------------
+-- 2. ລະບົບກວດສອບ (Team & Wall Check)
+---------------------------------------------------------
+local function IsEnemy(player)
+    if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then return false end
+    return true
 end
 
-local function CreateSlider(name, min, max, default, callback)
-    local f = Instance.new("Frame", Container)
-    f.Size = UDim2.new(1, -10, 0, 50)
-    f.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Instance.new("UICorner", f)
-    local t = Instance.new("TextLabel", f)
-    t.Size = UDim2.new(1, -10, 0, 25)
-    t.Position = UDim2.new(0,5,0,0)
-    t.Text = name .. ": " .. default
-    t.TextColor3 = Color3.new(1, 1, 1)
-    t.BackgroundTransparency = 1
-    local bar = Instance.new("Frame", f)
-    bar.Size = UDim2.new(1, -20, 0, 4)
-    bar.Position = UDim2.new(0, 10, 0, 35)
-    bar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    local fill = Instance.new("Frame", bar)
-    fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Slider ຂາວເໝືອນ Bear Style
-    bar.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            local move = UIS.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    local p = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                    fill.Size = UDim2.new(p, 0, 1, 0)
-                    local v = math.floor(min + (p * (max - min)))
-                    t.Text = name .. ": " .. v
-                    callback(v)
-                end
-            end)
-            UIS.InputEnded:Connect(function() move:Disconnect() end)
-        end
-    end)
+-- ຟັງຊັນກວດສອບວ່າສັດຕູຢູ່ຫຼັງກຳແພງ ຫຼື ບໍ່ (Wall Check)
+local function IsVisible(targetPart)
+    if not Config.WallCheck then return true end -- ຖ້າປິດ Wall Check ໃຫ້ຖືວ່າເຫັນຕະຫຼອດ
+    
+    local origin = Camera.CFrame.Position
+    local direction = (targetPart.Position - origin).Unit * (targetPart.Position - origin).Magnitude
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    
+    -- ຖ້າບໍ່ຕຳຫຍັງ ຫຼື ຕຳຖືກຕົວສັດຕູ = ແນມເຫັນ
+    if not result then return true end
+    if result.Instance:IsDescendantOf(targetPart.Parent) then return true end
+    return false
 end
 
--- --- Sidebar Tabs (Just for Look) ---
-CreateSidebarTab("AIMBOT")
-CreateSidebarTab("VISUALS")
-CreateSidebarTab("LOCAL PLAYER")
+-- ຊອກຫາເປົ້າໝາຍທີ່ດີທີ່ສຸດໃນວົງ FOV
+local function GetClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = Config.FovRadius 
+    local mousePos = UserInputService:GetMouseLocation()
 
--- --- Buttons & Sliders ---
-CreateBtn("AIMLOCK (PRECISION): OFF", function(self)
-    _G.Aimbot = not _G.Aimbot
-    self.Text = "AIMLOCK: " .. (_G.Aimbot and "ON" or "OFF")
-    self.BackgroundColor3 = _G.Aimbot and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(35, 35, 35)
-end)
-
-CreateBtn("ESP (HIGHLIGHT enemy): OFF", function(self)
-    _G.ESP = not _G.ESP
-    self.Text = "ESP: " .. (_G.ESP and "ON" or "OFF")
-end)
-
-CreateBtn("TRACER LINES (FF STYLE): OFF", function(self)
-    _G.TracerLines = not _G.TracerLines
-    self.Text = "LINES: " .. (_G.TracerLines and "ON" or "OFF")
-end)
-
-CreateBtn("FULL BRIGHT (MAP LIGHT): OFF", function(self)
-    _G.FullBright = not _G.FullBright
-    self.Text = "FULL BRIGHT: " .. (_G.FullBright and "ON" or "OFF")
-end)
-
-CreateSlider("SPEED (BYPASS SAFE)", 16, 300, 16, function(v) _G.WalkSpeed = v end)
-CreateSlider("FOV RADIUS (AIM SELECT)", 10, 500, 120, function(v) _G.FOVRadius = v end)
-
--- [[ 4. CORE LOOP ]]
-local tracers = {}
-RunService.RenderStepped:Connect(function()
-    local Center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    FOVCircle.Visible = _G.ShowFOV
-    FOVCircle.Radius = _G.FOVRadius
-    FOVCircle.Position = Center
-
-    if LPlr.Character and LPlr.Character:FindFirstChild("Humanoid") then
-        LPlr.Character.Humanoid.WalkSpeed = _G.WalkSpeed
-    end
-
-    if _G.FullBright then
-        Lighting.Ambient = Color3.new(1, 1, 1)
-        Lighting.Brightness = 2
-        Lighting.GlobalShadows = false
-    end
-
-    if _G.Aimbot and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-        local target, closestMag = nil, _G.FOVRadius
-        for _, v in pairs(game.Players:GetPlayers()) do
-            if v ~= LPlr and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 and v.Team ~= LPlr.Team then
-                local pos, vis = Camera:WorldToViewportPoint(v.Character.Head.Position)
-                if vis then
-                    local mag = (Vector2.new(pos.X, pos.Y) - Center).Magnitude
-                    if mag < closestMag then target = v.Character.Head; closestMag = mag end
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and IsEnemy(v) and v.Character and v.Character:FindFirstChild(Config.TargetPart) and v.Character:FindFirstChild("Humanoid") then
+            if v.Character.Humanoid.Health > 0 then
+                local targetPart = v.Character[Config.TargetPart]
+                local pos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                
+                if onScreen then
+                    local distance = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    
+                    -- ຕ້ອງຢູ່ໃນວົງມົນ ແລະ (ຜ່ານການທົດສອບກຳແພງ)
+                    if distance < shortestDistance and IsVisible(targetPart) then
+                        closestPlayer = v
+                        shortestDistance = distance
+                    end
                 end
             end
         end
-        if target then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), 0.18) end
+    end
+    return closestPlayer
+end
+
+---------------------------------------------------------
+-- 3. ລະບົບ Silent Aim (Magic Bullet)
+---------------------------------------------------------
+local mt = getrawmetatable(game)
+local oldIndex = mt.__index
+setreadonly(mt, false)
+
+mt.__index = newcclosure(function(t, k)
+    if Config.SilentAim and t == LocalPlayer:GetMouse() and (k == "Hit" or k == "Target") then
+        local target = GetClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild(Config.TargetPart) then
+            if k == "Hit" then
+                return target.Character[Config.TargetPart].CFrame 
+            elseif k == "Target" then
+                return target.Character[Config.TargetPart]
+            end
+        end
+    end
+    return oldIndex(t, k)
+end)
+setreadonly(mt, true)
+
+---------------------------------------------------------
+-- 4. ລະບົບ RenderStepped (ຫັນກ້ອງ & ESP)
+---------------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    
+    Camera.FieldOfView = Config.CameraFOV
+    local mouseLocation = UserInputService:GetMouseLocation()
+    local currentTarget = GetClosestPlayer()
+
+    -- ລະບົບ Aimbot (ຫັນກ້ອງ)
+    if Config.Aimbot and currentTarget then
+        pcall(function()
+            local targetPart = currentTarget.Character:FindFirstChild(Config.TargetPart)
+            if targetPart then
+                local targetCFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+                
+                if Config.HardLock then
+                    -- ລັອກຕິດໜຶບ 100% (ບໍ່ມີລາກ)
+                    Camera.CFrame = targetCFrame
+                else
+                    -- ລັອກແບບນຸ້ມນວນ (Soft Aim)
+                    Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Config.Smoothness)
+                end
+            end
+        end)
+    end
+    
+    -- ອັບເດດວົງມົນ FOV
+    if hasDrawing and FOVCircle then
+        if Config.ShowFOV then
+            FOVCircle.Visible = true
+            FOVCircle.Position = mouseLocation
+            FOVCircle.Radius = Config.FovRadius
+            
+            if currentTarget then
+                FOVCircle.Color = Color3.fromRGB(255, 50, 50) -- ສີແດງ (ລັອກເປົ້າແລ້ວ)
+            else
+                FOVCircle.Color = Color3.fromRGB(0, 255, 255) -- ສີຟ້າ (ປົກກະຕິ)
+            end
+        else
+            FOVCircle.Visible = false
+        end
     end
 
-    for _, v in pairs(game.Players:GetPlayers()) do
-        if v ~= LPlr and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local isEnemy = (v.Team ~= LPlr.Team)
-            local h = v.Character:FindFirstChild("LAM_ESP")
-            if _G.ESP and v.Character.Humanoid.Health > 0 and isEnemy then
-                if not h then
-                    local hl = Instance.new("Highlight", v.Character)
-                    hl.Name = "LAM_ESP"
-                    hl.FillColor = Color3.new(1, 0, 0)
-                    hl.AlwaysOnTop = true
-                end
-            else if h then h:Destroy() end end
+    -- Hitbox Logic
+    if Config.Hitbox then
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and IsEnemy(v) and v.Character and v.Character:FindFirstChild("Head") then
+                v.Character.Head.Size = Vector3.new(5, 5, 5)
+                v.Character.Head.Transparency = 0.6
+                v.Character.Head.CanCollide = false
+            end
+        end
+    end
 
-            if _G.TracerLines and v.Character.Humanoid.Health > 0 and isEnemy then
-                local pos, vis = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                if vis then
-                    if not tracers[v.Name] then tracers[v.Name] = Drawing.new("Line") end
-                    local l = tracers[v.Name]
-                    l.Visible, l.From, l.To, l.Color = true, Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y), Vector2.new(pos.X, pos.Y), Color3.new(1, 0, 0)
-                else if tracers[v.Name] then tracers[v.Name].Visible = false end end
-            else if tracers[v.Name] then tracers[v.Name].Visible = false end end
+    -- ESP Tracers (ມອງເສັ້ນ)
+    if hasDrawing then
+        if Config.Tracers then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer and IsEnemy(v) and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") then
+                    if v.Character.Humanoid.Health > 0 then
+                        local pos, onScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+                        
+                        if not ESP_Lines[v] then
+                            ESP_Lines[v] = Drawing.new("Line")
+                            ESP_Lines[v].Thickness = 1.5
+                            ESP_Lines[v].Color = Color3.fromRGB(255, 50, 50)
+                            ESP_Lines[v].Transparency = 1
+                        end
+                        
+                        if onScreen then
+                            ESP_Lines[v].From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                            ESP_Lines[v].To = Vector2.new(pos.X, pos.Y)
+                            ESP_Lines[v].Visible = true
+                        else
+                            ESP_Lines[v].Visible = false
+                        end
+                    else
+                        if ESP_Lines[v] then ESP_Lines[v].Visible = false end
+                    end
+                else
+                    if ESP_Lines[v] then ESP_Lines[v].Visible = false end
+                end
+            end
+        else
+            for _, line in pairs(ESP_Lines) do line.Visible = false end
         end
     end
 end)
+
+---------------------------------------------------------
+-- 5. ການສ້າງໜ້າຕາ UI ດ້ວຍ Rayfield Library
+---------------------------------------------------------
+local Window = Rayfield:CreateWindow({
+   Name = "LAM HUB | Ultimate Aim",
+   LoadingTitle = "Loading LAM HUB...",
+   LoadingSubtitle = "By LAM",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false, 
+})
+
+local CombatTab = Window:CreateTab("🎯 Combat", 4483345998)
+local VisualTab = Window:CreateTab("👁️ Visuals", 4483345998)
+
+-- ================= Combat Tab =================
+CombatTab:CreateSection("Aimbot Settings (ລະບົບຫັນກ້ອງ)")
+
+CombatTab:CreateToggle({
+   Name = "Enable Aimbot",
+   CurrentValue = false,
+   Flag = "AimbotToggle",
+   Callback = function(Value) Config.Aimbot = Value end,
+})
+
+CombatTab:CreateToggle({
+   Name = "🔥 Hard Lock (ລັອກຕິດໜຶບ 100%)",
+   CurrentValue = false,
+   Flag = "HardLockToggle",
+   Callback = function(Value) Config.HardLock = Value end,
+})
+
+CombatTab:CreateSlider({
+   Name = "Soft Aim Speed (ໃຊ້ເມື່ອປິດ Hard Lock)",
+   Range = {0.01, 1},
+   Increment = 0.01,
+   Suffix = "Speed",
+   CurrentValue = 0.1,
+   Flag = "SmoothSlider",
+   Callback = function(Value) Config.Smoothness = Value end,
+})
+
+CombatTab:CreateSection("Aimbot Config (ການຕັ້ງຄ່າເປົ້າໝາຍ)")
+
+CombatTab:CreateDropdown({
+   Name = "Target Part (ເລືອກຈຸດລັອກ)",
+   Options = {"Head", "HumanoidRootPart"},
+   CurrentOption = {"Head"},
+   MultipleOptions = false,
+   Flag = "TargetDropdown",
+   Callback = function(Option) Config.TargetPart = Option[1] end,
+})
+
+CombatTab:CreateToggle({
+   Name = "🧱 Wall Check (ບໍ່ລັອກຄົນຫຼັງກຳແພງ)",
+   CurrentValue = true,
+   Flag = "WallCheckToggle",
+   Callback = function(Value) Config.WallCheck = Value end,
+})
+
+CombatTab:CreateSection("Silent Aim & Hitbox")
+
+CombatTab:CreateToggle({
+   Name = "Enable Silent Aim (ຍິງເຂົ້າເອງ)",
+   CurrentValue = false,
+   Flag = "SilentAimToggle",
+   Callback = function(Value) Config.SilentAim = Value end,
+})
+
+CombatTab:CreateToggle({
+   Name = "Ultra Hitbox (ຂະຫຍາຍຫົວ)",
+   CurrentValue = false,
+   Flag = "HitboxToggle",
+   Callback = function(Value)
+        Config.Hitbox = Value
+        if not Value then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v.Character and v.Character:FindFirstChild("Head") then
+                    v.Character.Head.Size = Vector3.new(1.2, 1.2, 1.2)
+                    v.Character.Head.Transparency = 0
+                end
+            end
+        end
+   end,
+})
+
+-- ================= Visuals Tab =================
+VisualTab:CreateSection("ESP Settings")
+VisualTab:CreateToggle({
+   Name = "Show Tracers (ມອງເສັ້ນ)",
+   CurrentValue = false,
+   Flag = "TracersToggle",
+   Callback = function(Value) Config.Tracers = Value end,
+})
+
+VisualTab:CreateSection("FOV Circle")
+VisualTab:CreateToggle({
+   Name = "Show FOV Circle",
+   CurrentValue = false,
+   Flag = "FOVToggle",
+   Callback = function(Value) Config.ShowFOV = Value end,
+})
+VisualTab:CreateSlider({
+   Name = "FOV Radius (ປັບຂະໜາດວົງມົນ)",
+   Range = {50, 600},
+   Increment = 10,
+   Suffix = "Radius",
+   CurrentValue = 150,
+   Flag = "FOVRadiusSlider",
+   Callback = function(Value) Config.FovRadius = Value end,
+})
+
+VisualTab:CreateSection("Camera View")
+VisualTab:CreateSlider({
+   Name = "Camera FOV",
+   Range = {70, 120},
+   Increment = 1,
+   Suffix = "FOV",
+   CurrentValue = 70,
+   Flag = "CamFOVSlider",
+   Callback = function(Value) Config.CameraFOV = Value end,
+})
+
+Rayfield:Notify({
+   Title = "LAM HUB Upgraded!",
+   Content = "ອັບເກຣດລະບົບ Hard Lock ແລະ Wall Check ແລ້ວ.",
+   Duration = 5,
+   Image = 4483345998,
+})
+
