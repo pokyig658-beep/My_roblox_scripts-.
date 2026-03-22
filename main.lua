@@ -1,102 +1,98 @@
--- [[ LAM V3 - ULTIMATE HACKER FAST ATTACK ]] --
-getgenv().Config = {
-    ["Weapon"] = "Combat", -- ພິມຊື່ມີດ/ໝັດ ບ່ອນນີ້ (ຕົວພິມໃຫຍ່ໂຕທຳອິດ)
-    ["Distance"] = 7, -- ໄລຍະຫ່າງ (ສູງກວ່າ 5 ເພື່ອບໍ່ໃຫ້ມອນຕີຮອດ)
-    ["AttackSpeed"] = 0.05 -- ຄວາມໄວການຕີ (0.01-0.1)
-}
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
 local Window = Rayfield:CreateWindow({
-   Name = "LAM V3 | FAST ATTACK PRO",
-   LoadingTitle = "ກຳລັງ Bypass ລະບົບ Cooldown...",
-   LoadingSubtitle = "by LAM THAN PHANNORLITH",
-   ConfigurationSaving = { Enabled = false }
+   Name = "LAM HUB | Blox Fruits Auto Farm v1.0",
+   LoadingTitle = "ກຳລັງເລີ່ມຕົ້ນລະບົບ...",
+   LoadingSubtitle = "by Lam Than Phannorlith",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "LamHubConfig",
+      FileName = "BloxFruits_Save"
+   }
 })
 
-_G.AutoFarm = false
+-- [[ ຂໍ້ມູນການຟາມຕາມເວລ ]]
+local LevelData = {
+    {MinLvl = 1, MaxLvl = 15, QuestNPC = "Bandit Quest", QuestName = "BanditQuest", Monster = "Bandit", NPC_Pos = CFrame.new(1059, 15, 1547)},
+    {MinLvl = 15, MaxLvl = 30, QuestNPC = "Monkey Quest", QuestName = "MonkeyQuest", Monster = "Monkey", NPC_Pos = CFrame.new(-1612, 36, 147)},
+    {MinLvl = 30, MaxLvl = 60, QuestNPC = "Gorilla Quest", QuestName = "GorillaQuest", Monster = "Gorilla", NPC_Pos = CFrame.new(-1213, 16, -490)},
+    {MinLvl = 60, MaxLvl = 90, QuestNPC = "Snow Quest", QuestName = "SnowBanditQuest", Monster = "Snow Bandit", NPC_Pos = CFrame.new(1347, 105, -1328)},
+    -- ໝາຍເຫດ: ທ່ານສາມາດເພີ່ມພິກັດເກາະອື່ນໆ ໄປຈົນຮອດເວລ 2800 ໄດ້ຢູ່ບ່ອນນີ້
+}
 
--- --- ລະບົບຕີລົວ (Fast Attack Method) ---
-spawn(function()
-    while task.wait(getgenv().Config["AttackSpeed"]) do
-        if _G.AutoFarm then
-            pcall(function()
-                local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                if tool then
-                    -- ສົ່ງ Remote ຕີໂດຍກົງ (No Cooldown)
-                    game:GetService("ReplicatedStorage").Remotes.Validator:FireServer(math.huge)
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Attack", tool)
-                end
-            end)
-        end
-    end
+-- [[ ຕົວແປຄວບຄຸມ ]]
+_G.AutoFarm = false
+_G.FastAttack = true
+
+-- [[ ຟັງຊັນປ້ອງກັນການຫຼຸດ (Anti-AFK) ]]
+local VirtualUser = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
 end)
 
--- --- ຟັງຊັນຖືອາວຸດ ---
-function Equip()
-    pcall(function()
-        local weaponName = getgenv().Config["Weapon"]
-        local backpack = game.Players.LocalPlayer.Backpack
-        local char = game.Players.LocalPlayer.Character
-        local tool = backpack:FindFirstChild(weaponName) or char:FindFirstChild(weaponName)
-        if tool and not char:FindFirstChild(tool.Name) then
-            char.Humanoid:EquipTool(tool)
+-- [[ ໜ້າຕ່າງ UI ]]
+local MainTab = Window:CreateTab("Auto Farm", 4483362458)
+
+local Toggle = MainTab:CreateToggle({
+   Name = "Auto Farm Level (1-2800)",
+   CurrentValue = false,
+   Flag = "FarmToggle", 
+   Callback = function(Value)
+      _G.AutoFarm = Value
+      if Value then
+          StartFarmLoop()
+      end
+   end,
+})
+
+-- [[ Logic ການຟາມອັດຕະໂນມັດ ]]
+function StartFarmLoop()
+    spawn(function()
+        while _G.AutoFarm do
+            task.wait(0.1)
+            local p = game.Players.LocalPlayer
+            local myLevel = p.Data.Level.Value
+            
+            -- ເລືອກເກາະທີ່ເໝາະສົມ
+            local currentIsland = nil
+            for _, v in pairs(LevelData) do
+                if myLevel >= v.MinLvl and myLevel < v.MaxLvl then
+                    currentIsland = v
+                    break
+                end
+            end
+            
+            if currentIsland == nil then currentIsland = LevelData[#LevelData] end
+
+            -- ກວດສອບ Quest
+            if not p.PlayerGui.Main.Quest.Visible then
+                -- ບິນໄປຮັບ Quest
+                p.Character.HumanoidRootPart.CFrame = currentIsland.NPC_Pos
+                task.wait(0.5)
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", currentIsland.QuestName, 1)
+            else
+                -- ບິນໄປຕີ Monster
+                local enemy = workspace.Enemies:FindFirstChild(currentIsland.Monster)
+                if enemy and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                    -- ຕຳແໜ່ງບິນ (ຢູ່ເທິງຫົວເພື່ອຄວາມປອດໄພ)
+                    p.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
+                    
+                    -- ໂຈມຕີ
+                    VirtualUser:CaptureController()
+                    VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                else
+                    -- ຖ້າ Monster ຕາຍ ຫຼື ບໍ່ມີ ໃຫ້ບິນໄປຈຸດເກີດຂອງມັນ
+                    p.Character.HumanoidRootPart.CFrame = currentIsland.NPC_Pos * CFrame.new(0, 50, 0)
+                end
+            end
         end
     end)
 end
 
--- --- ລະບົບ Farm ---
-local Tab = Window:CreateTab("Main Farm", 4483362458)
-
-Tab:CreateToggle({
-   Name = "Start Auto Farm (ຕີລົວ + ຮັບເຄສເອງ)",
-   CurrentValue = false,
-   Callback = function(Value)
-      _G.AutoFarm = Value
-      spawn(function()
-         while _G.AutoFarm do
-            task.wait()
-            pcall(function()
-               local questGui = game.Players.LocalPlayer.PlayerGui.Main.Quest
-               if not questGui.Visible then
-                  -- ວາບໄປຮັບ Quest (Bandit)
-                  local npc = game.Workspace.NPCs:FindFirstChild("Bandit Quest Giver")
-                  game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
-                  game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
-               else
-                  -- ວາບໄປຕີມອນເຕີ
-                  for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                     if v.Name == "Bandit" and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        repeat
-                           task.wait()
-                           Equip()
-                           -- ວາບລັອກເປົ້າໝາຍ (ສູງ 7 studs ມອນຕີບໍ່ຮອດ)
-                           local dist = getgenv().Config["Distance"]
-                           game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, dist, 0) * CFrame.Angles(math.rad(-90), 0, 0)
-                           
-                           -- ລັອກມອນເຕີບໍ່ໃຫ້ບິນ (Noclip Mob)
-                           v.HumanoidRootPart.CanCollide = false
-                           v.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                        until not _G.AutoFarm or v.Humanoid.Health <= 0 or not questGui.Visible
-                        break
-                     end
-                  end
-               end
-            end)
-         end
-      end)
-   end,
-})
-
-Tab:CreateInput({
-   Name = "ຊື່ມີດ (ເຊັ່ນ: Combat)",
-   PlaceholderText = "Combat",
-   Callback = function(Text) getgenv().Config["Weapon"] = Text end,
-})
-
-Tab:CreateSlider({
-   Name = "ໄລຍະຫ່າງ (Distance)",
-   Range = {5, 15},
-   Increment = 1,
-   CurrentValue = 7,
-   Callback = function(Value) getgenv().Config["Distance"] = Value end,
+Rayfield:Notify({
+   Title = "ສະຄິບພ້ອມໃຊ້ງານ!",
+   Content = "ຍິນດີຕ້ອນຮັບທ່ານ Lam ຂໍໃຫ້ຟາມຢ່າງມີຄວາມສຸກ!",
+   Duration = 5,
+   Image = 4483362458,
 })
