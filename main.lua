@@ -1,7 +1,6 @@
--- [[ LAM HUB | PREMIUM FLUENT UI + WALKSPEED BYPASS ]] --
+-- [[ LAM HUB | FLUENT PREMIUM (HYBRID TOGGLE FIX 100%) ]] --
 
-local HttpService = game:GetService("HttpService")
-local CoreGui = pcall(gethui) and gethui() or game:GetService("CoreGui")
+local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,45 +9,15 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 -- ==========================================
--- [ BYPASS SYSTEM: Randomize GUI Names ]
+-- 1. ສ້າງປຸ່ມລອຍແຄບຊູນ (THE TOP BAR)
 -- ==========================================
-local function GenerateRandomName()
-    return HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 15)
-end
+-- ດຶງຄ່າໜ້າຈໍທີ່ປອດໄພທີ່ສຸດສຳລັບມືຖື
+local safeContainer = CoreGui
+pcall(function() if gethui then safeContainer = gethui() end end)
 
-local oldGuis = {}
-for _, v in pairs(CoreGui:GetChildren()) do oldGuis[v] = true end
-
--- ==========================================
--- 1. ໂຫຼດ FLUENT UI
--- ==========================================
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-
-local Window = Fluent:CreateWindow({
-    Title = "LAM HUB",
-    SubTitle = "[ V.I.P + Speed Bypass ]",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(550, 350),
-    Acrylic = true,
-    Theme = "Darker",
-    MinimizeKey = Enum.KeyCode.RightControl
-})
-
-local fluentGui = nil
-for _, v in pairs(CoreGui:GetChildren()) do
-    if not oldGuis[v] and v:IsA("ScreenGui") then
-        fluentGui = v
-        fluentGui.Name = GenerateRandomName()
-        break
-    end
-end
-
--- ==========================================
--- 2. PREMIUM MOBILE TOGGLE (Top Bar)
--- ==========================================
 local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = GenerateRandomName()
-ToggleGui.Parent = CoreGui
+ToggleGui.Name = "LAM_PremiumToggle"
+ToggleGui.Parent = safeContainer
 ToggleGui.ResetOnSpawn = false
 
 local TopBar = Instance.new("Frame")
@@ -75,7 +44,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 20, 0, 0)
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "LAM HUB | BYPASS"
+Title.Text = "LAM HUB | V.I.P"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -90,31 +59,86 @@ ToggleBtn.Text = "[ UI ]"
 ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
 ToggleBtn.TextSize = 13
 
+-- ==========================================
+-- 2. ໂຫຼດ FLUENT UI
+-- ==========================================
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "LAM HUB",
+    SubTitle = "[ Premium Mobile ]",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(550, 320),
+    Acrylic = true,
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.RightControl
+})
+
+-- ==========================================
+-- 3. ລະບົບປິດ/ເປີດ UI ທີ່ແຂງແກ່ນທີ່ສຸດ (HYBRID TOGGLE)
+-- ==========================================
 local menuOpen = true
+
 ToggleBtn.MouseButton1Click:Connect(function()
-    if fluentGui then
-        fluentGui.Enabled = not fluentGui.Enabled
-        menuOpen = fluentGui.Enabled
-        
-        if menuOpen then
-            UIStroke.Color = Color3.fromRGB(0, 255, 255)
-            ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-        else
-            UIStroke.Color = Color3.fromRGB(255, 50, 50)
-            ToggleBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
-        end
+    menuOpen = not menuOpen
+    
+    -- ປ່ຽນສີປຸ່ມໃຫ້ຮູ້ສະຖານະ
+    if menuOpen then
+        UIStroke.Color = Color3.fromRGB(0, 255, 255)
+        ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
+    else
+        UIStroke.Color = Color3.fromRGB(255, 50, 50)
+        ToggleBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
     end
+
+    -- ວິທີທີ 1: ໃຊ້ລະບົບ Hardware Keypress ຂອງຕົວລັນມືຖື (Delta/Codex)
+    local keySuccess = pcall(function()
+        if keypress and keyrelease then
+            keypress(0xA3) -- ລະຫັດປຸ່ມ Right Control
+            task.wait(0.05)
+            keyrelease(0xA3)
+            return true
+        end
+        return false
+    end)
+
+    -- ວິທີທີ 2: ໃຊ້ລະບົບ Virtual Input ຂອງ Roblox
+    if not keySuccess then
+        pcall(function()
+            local vim = game:GetService("VirtualInputManager")
+            vim:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
+            task.wait(0.05)
+            vim:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+        end)
+    end
+
+    -- ວິທີທີ 3: ໃຊ້ກຳລັງບັງຄັບປິດໜ້າຈໍ (Brute-Force) ເຮັດວຽກແນ່ນອນ 100%
+    pcall(function()
+        local containers = {CoreGui}
+        if gethui then table.insert(containers, gethui()) end
+        
+        for _, container in ipairs(containers) do
+            for _, gui in pairs(container:GetChildren()) do
+                -- Fluent UI ຈະມີ Frame ທີ່ຊື່ວ່າ "Window" ສະເໝີ
+                if gui:IsA("ScreenGui") and gui.Name ~= "LAM_PremiumToggle" then
+                    if gui:FindFirstChild("Window") then
+                        gui.Enabled = menuOpen
+                    end
+                end
+            end
+        end
+    end)
 end)
 
 -- ==========================================
--- 3. TABS & FEATURES
+-- 4. ຕັ້ງຄ່າເມນູຕ່າງໆ (FEATURES)
 -- ==========================================
 local Config = {
     Aim = false, HardLock = false, Smooth = 0.2, Part = "Head",
-    Team = true, Wall = true, Hitbox = false, HitSize = 5, HitTrans = 0.6,
+    Team = true, Wall = true, Trigger = false,
+    Hitbox = false, HitSize = 5, HitTrans = 0.6,
     FOV = false, FOVRad = 150, ESPLine = false,
-    Speed = 16, SpeedBypass = true, -- ເປີດໃຊ້ລະບົບບາຍພາດແລ່ນໄວ
-    Jump = 50, InfJump = false, Noclip = false
+    Speed = 16, Jump = 50, InfJump = false, Noclip = false
 }
 
 local Tabs = {
@@ -123,30 +147,42 @@ local Tabs = {
     Player = Window:AddTab({ Title = "Player", Icon = "user" })
 }
 
+-- [ COMBAT ]
 Tabs.Combat:AddToggle("Aim", {Title = "Enable Aimbot", Default = false}):OnChanged(function(v) Config.Aim = v end)
 Tabs.Combat:AddToggle("Hard", {Title = "Hard Lock (Instant)", Default = false}):OnChanged(function(v) Config.HardLock = v end)
 Tabs.Combat:AddSlider("Smooth", {Title = "Smoothness", Default = 0.2, Min = 0.01, Max = 1, Rounding = 2}):OnChanged(function(v) Config.Smooth = v end)
 Tabs.Combat:AddDropdown("Part", {Title = "Target Part", Values = {"Head", "HumanoidRootPart"}, Default = 1}):OnChanged(function(v) Config.Part = v end)
 Tabs.Combat:AddToggle("Team", {Title = "Team Check", Default = true}):OnChanged(function(v) Config.Team = v end)
 Tabs.Combat:AddToggle("Wall", {Title = "Wall Check", Default = true}):OnChanged(function(v) Config.Wall = v end)
-Tabs.Combat:AddToggle("Hitbox", {Title = "Enable Hitbox", Default = false}):OnChanged(function(v) Config.Hitbox = v end)
 
+Tabs.Combat:AddToggle("Hitbox", {Title = "Enable Hitbox", Default = false}):OnChanged(function(v) 
+    Config.Hitbox = v 
+    if not v then
+        pcall(function()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Head") then
+                    p.Character.Head.Size = Vector3.new(1.2, 1.2, 1.2)
+                    p.Character.Head.Transparency = 0
+                end
+            end
+        end)
+    end
+end)
+Tabs.Combat:AddSlider("HSize", {Title = "Hitbox Size", Default = 5, Min = 2, Max = 20, Rounding = 0}):OnChanged(function(v) Config.HitSize = v end)
+
+-- [ VISUALS ]
 Tabs.Visuals:AddToggle("ESPLine", {Title = "ESP Tracers (Lines)", Default = false}):OnChanged(function(v) Config.ESPLine = v end)
 Tabs.Visuals:AddToggle("FOV", {Title = "Show FOV Circle", Default = false}):OnChanged(function(v) Config.FOV = v end)
 Tabs.Visuals:AddSlider("FRad", {Title = "FOV Radius", Default = 150, Min = 50, Max = 800, Rounding = 0}):OnChanged(function(v) Config.FOVRad = v end)
 
--- [ PLAYER TAB: WALKSPEED BYPASS ]
-Tabs.Player:AddParagraph({
-    Title = "⚡ Speed Bypass Active",
-    Content = "ລະບົບແລ່ນໄວຖືກປ່ຽນມາໃຊ້ CFrame TP Walk ເພື່ອປ້ອງກັນການຖືກເຕະອອກຈາກເກມແລ້ວ."
-})
+-- [ PLAYER (BYPASS MODE) ]
 Tabs.Player:AddSlider("WS", {Title = "WalkSpeed (Bypass Mode)", Default = 16, Min = 16, Max = 100, Rounding = 0}):OnChanged(function(v) Config.Speed = v end)
-Tabs.Player:AddSlider("JP", {Title = "JumpPower", Default = 50, Min = 50, Max = 200, Rounding = 0}):OnChanged(function(v) Config.Jump = v end)
+Tabs.Player:AddSlider("JP", {Title = "JumpPower", Default = 50, Min = 50, Max = 300, Rounding = 0}):OnChanged(function(v) Config.Jump = v end)
 Tabs.Player:AddToggle("InfJ", {Title = "Infinite Jump (Fly)", Default = false}):OnChanged(function(v) Config.InfJump = v end)
 Tabs.Player:AddToggle("Noclip", {Title = "Noclip (Walk through walls)", Default = false}):OnChanged(function(v) Config.Noclip = v end)
 
 -- ==========================================
--- 4. BACKEND LOGIC (WITH C-FRAME SPEED BYPASS)
+-- 5. BACKEND LOGIC (ລະບົບໂກງແລ່ນໄວ ແລະ ອື່ນໆ)
 -- ==========================================
 local hasDraw = pcall(function() local t = Drawing.new("Line") t:Remove() end)
 local FOVCircle
@@ -182,43 +218,31 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- ສັງເກດໃຊ້ `deltaTime` ເພື່ອໃຫ້ຄວາມໄວການວາບຄົງທີ່ໃນທຸກໆເຄື່ອງ
 RunService.RenderStepped:Connect(function(deltaTime)
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local target, shortest = nil, Config.FOVRad
-
-    -- 1. ລະບົບ WALKSPEED BYPASS (C-Frame TP Walk)
+    
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hum = LocalPlayer.Character.Humanoid
         local hrp = LocalPlayer.Character.HumanoidRootPart
         
-        -- ຖ້າປັບແລ່ນໄວຫຼາຍກວ່າ 16
         if Config.Speed > 16 then
-            -- ບໍ່ໄປແຕະຕ້ອງ WalkSpeed ເພື່ອບໍ່ໃຫ້ເກມຈັບໄດ້
             hum.WalkSpeed = 16 
-            
-            -- ກວດສອບວ່າຜູ້ຫຼິ້ນກຳລັງກົດຍ່າງຢູ່ຫຼືບໍ່ (ເຮັດວຽກໄດ້ທັງ PC ແລະ Thumbstick ໃນມືຖື)
             if hum.MoveDirection.Magnitude > 0 then
-                -- ຄຳນວນໄລຍະທາງທີ່ຈະເພີ່ມ ເພື່ອໃຫ້ໄດ້ຄວາມໄວຕາມທີ່ຕັ້ງໄວ້
-                local extraSpeed = Config.Speed - 16
-                hrp.CFrame = hrp.CFrame + (hum.MoveDirection * (extraSpeed * deltaTime))
+                hrp.CFrame = hrp.CFrame + (hum.MoveDirection * ((Config.Speed - 16) * deltaTime))
             end
         else
             hum.WalkSpeed = 16
         end
-
-        -- Jump Power (ອັນນີ້ປັບປົກກະຕິ ແຕ່ຖ້າເດັ້ງແນະນຳໃຫ້ໃຊ້ Infinite Jump ແທນ)
         hum.JumpPower = Config.Jump
     end
 
-    -- 2. Noclip
     if Config.Noclip and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 
-    -- 3. ຊອກຫາເປົ້າໝາຍ (Aimbot & ESP)
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and IsValid(v) and v.Character and v.Character:FindFirstChild(Config.Part) and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
             local part = v.Character[Config.Part]
@@ -230,7 +254,6 @@ RunService.RenderStepped:Connect(function(deltaTime)
         end
     end
 
-    -- 4. Aimbot Logic
     if Config.Aim and target then
         pcall(function()
             local tPos = target.Character[Config.Part].Position
@@ -239,7 +262,6 @@ RunService.RenderStepped:Connect(function(deltaTime)
         end)
     end
 
-    -- 5. Drawing (FOV & ESP)
     if hasDraw and FOVCircle then
         FOVCircle.Visible = Config.FOV; FOVCircle.Position = center; FOVCircle.Radius = Config.FOVRad
         FOVCircle.Color = target and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 255)
@@ -272,4 +294,5 @@ RunService.RenderStepped:Connect(function(deltaTime)
 end)
 
 Window:SelectTab(1)
-Fluent:Notify({ Title = "Bypass Active", Content = "Speed Bypass ພ້ອມໃຊ້ງານ! ແລ່ນໄວໄດ້ບໍ່ເດັ້ງ.", Duration = 5 })
+Fluent:Notify({ Title = "SUCCESS", Content = "ລະບົບ Hybrid Toggle ເປີດໃຊ້ແລ້ວ! ກົດ [ UI ] ໄດ້ເລີຍ.", Duration = 5 })
+
