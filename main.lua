@@ -1,10 +1,11 @@
--- ============================================
--- LAM HUB V6 | BLOX FRUITS
--- ແກ້ໄຂ Auto Farm, Auto Quest, Auto Collect
--- ໃຊ້ງານ: ກົດ INSERT ເພື່ອເປີດ/ປິດ UI
--- ============================================
+-- ==================================================
+-- LAM HUB V7 | BLOX FRUITS
+-- ສ້າງໂດຍ: ຕາມຄຳຮ້ອງຂອງທ່ານ
+-- ຟັງຊັນ: Auto Farm, Auto Quest, Auto Collect, Teleport, ປັບຄວາມໄວ ແລະ ອື່ນໆ
+-- ວິທີໃຊ້: ກົດ INSERT ເພື່ອເປີດ/ປິດ UI
+-- ==================================================
 
--- ຕົວແປຄວບຄຸມ
+-- ຕົວແປຄວບຄຸມສະຖານະ
 local Settings = {
     AutoFarm = false,
     AutoQuest = false,
@@ -13,22 +14,22 @@ local Settings = {
     FarmRadius = 300,
     WalkSpeed = 16,
     JumpPower = 50,
-    AntiAFK = false,
-    ESP = false
+    AntiAFK = false
 }
 
--- ຟັງຊັນເຄື່ອງມື
+-- ຟັງຊັນເຄື່ອງມືທົ່ວໄປ
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
+local VirtualInput = game:GetService("VirtualInputManager")
 
--- ຟັງຊັນສົ່ງຄຳສັ່ງ Remote (ໃຊ້ໄດ້ກັບ Blox Fruits ທຸກເວີຊັນ)
-local function InvokeRemote(name, ...)
+-- ຟັງຊັນສົ່ງຄຳສັ່ງ Remote (ໃຊ້ໄດ້ກັບທຸກເວີຊັນ)
+local function InvokeRemote(...)
     local success, result = pcall(function()
-        return ReplicatedStorage.Remotes.CommF_:InvokeServer(name, ...)
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer(...)
     end)
     return result
 end
@@ -43,7 +44,7 @@ local function GetNearestNPC()
     local minDist = Settings.FarmRadius
     local targetName = Settings.TargetNPC:lower()
     
-    -- ຊອກຫາໃນ workspace.Enemies (ຖ້າມີ)
+    -- ຊອກຫາໃນ workspace.Enemies ກ່ອນ (ຖ້າມີ)
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, v in pairs(enemies:GetChildren()) do
@@ -88,17 +89,16 @@ local function AttackTarget(target)
     local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
-    -- ຍ້າຍໄປໃກ້
+    -- ຍ້າຍໄປໃກ້ເປົ້າ
     hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4)
     wait(0.05)
     
     -- ໂຈມຕີດ້ວຍ Remote ທີ່ຖືກຕ້ອງ
-    local success = pcall(function()
+    pcall(function()
         InvokeRemote("click", target.HumanoidRootPart.Position, target)
     end)
     
-    -- ກົດ E ຊ່ວຍ
-    local VirtualInput = game:GetService("VirtualInputManager")
+    -- ກົດປຸ່ມ E ຊ່ວຍ
     VirtualInput:SendKeyEvent(true, "E", false, game)
     wait(0.05)
     VirtualInput:SendKeyEvent(false, "E", false, game)
@@ -109,7 +109,7 @@ local function HandleQuest()
     if not Settings.AutoQuest then return end
     
     -- ລອງສົ່ງເຄສ (ຖ້າສຳເລັດ)
-    local complete = pcall(function()
+    pcall(function()
         InvokeRemote("CompleteQuest")
     end)
     
@@ -119,61 +119,25 @@ local function HandleQuest()
     end)
 end
 
--- ຟັງຊັນ Auto Farm ຫຼັກ
-local farmLoop = nil
-local function StartAutoFarm()
-    if farmLoop then return end
-    farmLoop = RunService.RenderStepped:Connect(function()
-        if not Settings.AutoFarm then return end
-        if not LocalPlayer.Character then return end
-        
-        -- ຈັດການ Quest
-        HandleQuest()
-        
-        -- ຊອກ ແລະ ໂຈມຕີ NPC
-        local target = GetNearestNPC()
-        if target then
-            AttackTarget(target)
-        end
-    end)
-end
-
--- ຟັງຊັນ Auto Collect
-local collectLoop = nil
-local function StartAutoCollect()
-    if collectLoop then return end
-    collectLoop = RunService.RenderStepped:Connect(function()
-        if not Settings.AutoCollect then return end
-        if not LocalPlayer.Character then return end
-        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("Tool") or (v:IsA("Model") and (v.Name:find("Money") or v.Name:find("Chest") or v.Name:find("Drop") or v.Name:find("Fruit"))) then
-                local part = v:FindFirstChild("Handle") or v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
-                if part and (part.Position - hrp.Position).Magnitude < 50 then
-                    hrp.CFrame = part.CFrame
-                    wait(0.1)
-                end
+-- ຟັງຊັນເກັບໄອເຕັມ
+local function CollectItems()
+    if not Settings.AutoCollect then return end
+    if not LocalPlayer.Character then return end
+    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Tool") or (v:IsA("Model") and (v.Name:find("Money") or v.Name:find("Chest") or v.Name:find("Drop") or v.Name:find("Fruit"))) then
+            local part = v:FindFirstChild("Handle") or v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
+            if part and (part.Position - hrp.Position).Magnitude < 50 then
+                hrp.CFrame = part.CFrame
+                wait(0.1)
             end
         end
-    end)
+    end
 end
 
--- ຟັງຊັນ Anti AFK
-local afkLoop = nil
-local function StartAntiAFK()
-    if afkLoop then return end
-    afkLoop = RunService.RenderStepped:Connect(function()
-        if not Settings.AntiAFK then return end
-        pcall(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-    end)
-end
-
--- ຟັງຊັນປັບ WalkSpeed / JumpPower
+-- ຟັງຊັນປັບຄວາມໄວ ແລະ ການກະໂດດ
 local function ApplyMovement()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         local humanoid = LocalPlayer.Character.Humanoid
@@ -182,8 +146,19 @@ local function ApplyMovement()
     end
 end
 
--- ສ້າງ GUI ແບບງ່າຍ (ບໍ່ຕ້ອງພຶ່ງ Library ພາຍນອກ)
+-- ຟັງຊັນ Anti AFK
+local function AntiAFK()
+    if Settings.AntiAFK then
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    end
+end
+
+-- ==================== UI ====================
 local function CreateUI()
+    -- ລ້າງ GUI ເກົ່າ
     if game.CoreGui:FindFirstChild("LAM_HUB") then
         game.CoreGui.LAM_HUB:Destroy()
     end
@@ -196,8 +171,8 @@ local function CreateUI()
     mainFrame.Parent = gui
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BorderSizePixel = 0
-    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
-    mainFrame.Size = UDim2.new(0, 600, 0, 500)
+    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -280)
+    mainFrame.Size = UDim2.new(0, 600, 0, 560)
     mainFrame.Active = true
     mainFrame.Draggable = true
     
@@ -221,7 +196,7 @@ local function CreateUI()
     title.Position = UDim2.new(0, 15, 0, 0)
     title.Size = UDim2.new(0, 300, 1, 0)
     title.Font = Enum.Font.GothamBold
-    title.Text = "🔥 LAM HUB V6 | BLOX FRUITS"
+    title.Text = "🔥 LAM HUB V7 | BLOX FRUITS"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.TextSize = 18
     title.TextXAlignment = Enum.TextXAlignment.Left
@@ -241,9 +216,6 @@ local function CreateUI()
         Settings.AutoQuest = false
         Settings.AutoCollect = false
         Settings.AntiAFK = false
-        if farmLoop then farmLoop:Disconnect() farmLoop = nil end
-        if collectLoop then collectLoop:Disconnect() collectLoop = nil end
-        if afkLoop then afkLoop:Disconnect() afkLoop = nil end
     end)
     
     -- Scroll frame ສຳລັບສ່ວນຕ່າງໆ
@@ -252,33 +224,16 @@ local function CreateUI()
     scroll.BackgroundTransparency = 1
     scroll.Position = UDim2.new(0, 10, 0, 50)
     scroll.Size = UDim2.new(1, -20, 1, -60)
-    scroll.CanvasSize = UDim2.new(0, 0, 0, 550)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 700)
     scroll.ScrollBarThickness = 6
     
-    -- ສ້າງປຸ່ມແບບງ່າຍ
-    local function AddButton(text, y, callback)
-        local btn = Instance.new("TextButton")
-        btn.Parent = scroll
-        btn.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-        btn.Position = UDim2.new(0, 10, 0, y)
-        btn.Size = UDim2.new(0, 250, 0, 45)
-        btn.Font = Enum.Font.GothamBold
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 14
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 8)
-        btnCorner.Parent = btn
-        btn.MouseButton1Click:Connect(callback)
-        return btn
-    end
-    
+    -- ຟັງຊັນຊ່ວຍເພີ່ມອົງປະກອບ
     local function AddToggle(text, y, getter, setter)
         local frame = Instance.new("Frame")
         frame.Parent = scroll
         frame.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
         frame.Position = UDim2.new(0, 10, 0, y)
-        frame.Size = UDim2.new(0, 250, 0, 45)
+        frame.Size = UDim2.new(0, 280, 0, 45)
         local frameCorner = Instance.new("UICorner")
         frameCorner.CornerRadius = UDim.new(0, 8)
         frameCorner.Parent = frame
@@ -287,7 +242,7 @@ local function CreateUI()
         label.Parent = frame
         label.BackgroundTransparency = 1
         label.Position = UDim2.new(0, 10, 0, 0)
-        label.Size = UDim2.new(0, 180, 1, 0)
+        label.Size = UDim2.new(0, 200, 1, 0)
         label.Font = Enum.Font.GothamBold
         label.Text = text
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -321,7 +276,7 @@ local function CreateUI()
         frame.Parent = scroll
         frame.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
         frame.Position = UDim2.new(0, 10, 0, y)
-        frame.Size = UDim2.new(0, 250, 0, 45)
+        frame.Size = UDim2.new(0, 280, 0, 45)
         local frameCorner = Instance.new("UICorner")
         frameCorner.CornerRadius = UDim.new(0, 8)
         frameCorner.Parent = frame
@@ -341,7 +296,7 @@ local function CreateUI()
         btn.Parent = frame
         btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
         btn.Position = UDim2.new(0, 100, 0, 10)
-        btn.Size = UDim2.new(0, 140, 0, 25)
+        btn.Size = UDim2.new(0, 170, 0, 25)
         btn.Font = Enum.Font.Gotham
         btn.Text = current
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -356,8 +311,8 @@ local function CreateUI()
             dropdown = Instance.new("Frame")
             dropdown.Parent = scroll
             dropdown.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-            dropdown.Position = UDim2.new(0, 110, 0, y + 40)
-            dropdown.Size = UDim2.new(0, 140, 0, #options * 30)
+            dropdown.Position = UDim2.new(0, 110, 0, y + 45)
+            dropdown.Size = UDim2.new(0, 170, 0, #options * 30)
             local dropCorner = Instance.new("UICorner")
             dropCorner.CornerRadius = UDim.new(0, 6)
             dropCorner.Parent = dropdown
@@ -380,214 +335,205 @@ local function CreateUI()
                 end)
             end
         end)
-        
         return frame
+    end
+    
+    local function AddSlider(text, y, minVal, maxVal, getter, setter)
+        local frame = Instance.new("Frame")
+        frame.Parent = scroll
+        frame.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+        frame.Position = UDim2.new(0, 10, 0, y)
+        frame.Size = UDim2.new(0, 280, 0, 60)
+        local frameCorner = Instance.new("UICorner")
+        frameCorner.CornerRadius = UDim.new(0, 8)
+        frameCorner.Parent = frame
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = frame
+        label.BackgroundTransparency = 1
+        label.Position = UDim2.new(0, 10, 0, 5)
+        label.Size = UDim2.new(0, 200, 0, 20)
+        label.Font = Enum.Font.Gotham
+        label.Text = text .. ": " .. getter()
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextSize = 12
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local sliderBg = Instance.new("Frame")
+        sliderBg.Parent = frame
+        sliderBg.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        sliderBg.Position = UDim2.new(0, 10, 0, 30)
+        sliderBg.Size = UDim2.new(0, 260, 0, 6)
+        
+        local sliderFill = Instance.new("Frame")
+        sliderFill.Parent = sliderBg
+        sliderFill.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        sliderFill.Size = UDim2.new((getter() - minVal) / (maxVal - minVal), 0, 1, 0)
+        
+        local function updateValue(value)
+            local newVal = math.floor(value)
+            setter(newVal)
+            label.Text = text .. ": " .. newVal
+            sliderFill.Size = UDim2.new((newVal - minVal) / (maxVal - minVal), 0, 1, 0)
+        end
+        
+        sliderBg.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                while game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+                    local mousePos = game.Players.LocalPlayer:GetMouse().X
+                    local sliderPos = sliderBg.AbsolutePosition.X
+                    local percent = math.clamp((mousePos - sliderPos) / sliderBg.AbsoluteSize.X, 0, 1)
+                    updateValue(minVal + (percent * (maxVal - minVal)))
+                    wait()
+                end
+            end
+        end)
+        return frame
+    end
+    
+    local function AddButton(text, y, callback)
+        local btn = Instance.new("TextButton")
+        btn.Parent = scroll
+        btn.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+        btn.Position = UDim2.new(0, 10, 0, y)
+        btn.Size = UDim2.new(0, 280, 0, 40)
+        btn.Font = Enum.Font.GothamBold
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 14
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 8)
+        btnCorner.Parent = btn
+        btn.MouseButton1Click:Connect(callback)
+        return btn
     end
     
     -- ເພີ່ມອົງປະກອບຕ່າງໆ
     local y = 10
-    AddToggle("Auto Farm", y, function() return Settings.AutoFarm end, function(v)
+    AddToggle("⚔️ Auto Farm", y, function() return Settings.AutoFarm end, function(v)
         Settings.AutoFarm = v
-        if v then StartAutoFarm() else if farmLoop then farmLoop:Disconnect() farmLoop = nil end end
     end)
     y = y + 55
-    AddToggle("Auto Quest", y, function() return Settings.AutoQuest end, function(v) Settings.AutoQuest = v end)
+    AddToggle("📋 Auto Quest", y, function() return Settings.AutoQuest end, function(v)
+        Settings.AutoQuest = v
+    end)
     y = y + 55
-    AddToggle("Auto Collect", y, function() return Settings.AutoCollect end, function(v)
+    AddToggle("💰 Auto Collect", y, function() return Settings.AutoCollect end, function(v)
         Settings.AutoCollect = v
-        if v then StartAutoCollect() else if collectLoop then collectLoop:Disconnect() collectLoop = nil end end
     end)
     y = y + 55
-    AddDropdown("Target NPC", y, {"Bandit", "Pirate", "Marine", "Brute", "Diamond", "Snow", "All"}, Settings.TargetNPC, function(v)
+    AddDropdown("🎯 Target NPC", y, {"Bandit", "Pirate", "Marine", "Brute", "Diamond", "Snow", "All"}, Settings.TargetNPC, function(v)
         Settings.TargetNPC = v
     end)
     y = y + 55
-    
-    -- Slider ສຳລັບ Farm Radius
-    local radiusFrame = Instance.new("Frame")
-    radiusFrame.Parent = scroll
-    radiusFrame.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-    radiusFrame.Position = UDim2.new(0, 10, 0, y)
-    radiusFrame.Size = UDim2.new(0, 250, 0, 60)
-    local radiusCorner = Instance.new("UICorner")
-    radiusCorner.CornerRadius = UDim.new(0, 8)
-    radiusCorner.Parent = radiusFrame
-    
-    local radiusLabel = Instance.new("TextLabel")
-    radiusLabel.Parent = radiusFrame
-    radiusLabel.BackgroundTransparency = 1
-    radiusLabel.Position = UDim2.new(0, 10, 0, 5)
-    radiusLabel.Size = UDim2.new(0, 200, 0, 20)
-    radiusLabel.Font = Enum.Font.Gotham
-    radiusLabel.Text = "Farm Radius: " .. Settings.FarmRadius
-    radiusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    radiusLabel.TextSize = 12
-    radiusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local sliderBg = Instance.new("Frame")
-    sliderBg.Parent = radiusFrame
-    sliderBg.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    sliderBg.Position = UDim2.new(0, 10, 0, 30)
-    sliderBg.Size = UDim2.new(0, 230, 0, 6)
-    
-    local sliderFill = Instance.new("Frame")
-    sliderFill.Parent = sliderBg
-    sliderFill.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    sliderFill.Size = UDim2.new((Settings.FarmRadius - 50) / 450, 0, 1, 0)
-    
-    local function updateRadius(value)
-        Settings.FarmRadius = math.floor(value)
-        radiusLabel.Text = "Farm Radius: " .. Settings.FarmRadius
-        sliderFill.Size = UDim2.new((Settings.FarmRadius - 50) / 450, 0, 1, 0)
-    end
-    
-    sliderBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            while game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                local mousePos = game.Players.LocalPlayer:GetMouse().X
-                local sliderPos = sliderBg.AbsolutePosition.X
-                local percent = math.clamp((mousePos - sliderPos) / sliderBg.AbsoluteSize.X, 0, 1)
-                updateRadius(50 + (percent * 450))
-                wait()
-            end
-        end
+    AddSlider("📏 Farm Radius", y, 50, 500, function() return Settings.FarmRadius end, function(v)
+        Settings.FarmRadius = v
     end)
     y = y + 70
-    
-    -- Walk Speed Slider
-    local wsFrame = Instance.new("Frame")
-    wsFrame.Parent = scroll
-    wsFrame.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-    wsFrame.Position = UDim2.new(0, 10, 0, y)
-    wsFrame.Size = UDim2.new(0, 250, 0, 60)
-    local wsCorner = Instance.new("UICorner")
-    wsCorner.CornerRadius = UDim.new(0, 8)
-    wsCorner.Parent = wsFrame
-    
-    local wsLabel = Instance.new("TextLabel")
-    wsLabel.Parent = wsFrame
-    wsLabel.BackgroundTransparency = 1
-    wsLabel.Position = UDim2.new(0, 10, 0, 5)
-    wsLabel.Size = UDim2.new(0, 200, 0, 20)
-    wsLabel.Font = Enum.Font.Gotham
-    wsLabel.Text = "Walk Speed: " .. Settings.WalkSpeed
-    wsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    wsLabel.TextSize = 12
-    wsLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local wsSliderBg = Instance.new("Frame")
-    wsSliderBg.Parent = wsFrame
-    wsSliderBg.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    wsSliderBg.Position = UDim2.new(0, 10, 0, 30)
-    wsSliderBg.Size = UDim2.new(0, 230, 0, 6)
-    
-    local wsSliderFill = Instance.new("Frame")
-    wsSliderFill.Parent = wsSliderBg
-    wsSliderFill.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    wsSliderFill.Size = UDim2.new((Settings.WalkSpeed - 16) / 284, 0, 1, 0)
-    
-    local function updateWalkSpeed(value)
-        Settings.WalkSpeed = math.floor(value)
-        wsLabel.Text = "Walk Speed: " .. Settings.WalkSpeed
-        wsSliderFill.Size = UDim2.new((Settings.WalkSpeed - 16) / 284, 0, 1, 0)
+    AddSlider("🏃 Walk Speed", y, 16, 300, function() return Settings.WalkSpeed end, function(v)
+        Settings.WalkSpeed = v
         ApplyMovement()
-    end
-    
-    wsSliderBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            while game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                local mousePos = game.Players.LocalPlayer:GetMouse().X
-                local sliderPos = wsSliderBg.AbsolutePosition.X
-                local percent = math.clamp((mousePos - sliderPos) / wsSliderBg.AbsoluteSize.X, 0, 1)
-                updateWalkSpeed(16 + (percent * 284))
-                wait()
-            end
-        end
     end)
     y = y + 70
-    
-    -- Jump Power Slider
-    local jpFrame = Instance.new("Frame")
-    jpFrame.Parent = scroll
-    jpFrame.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-    jpFrame.Position = UDim2.new(0, 10, 0, y)
-    jpFrame.Size = UDim2.new(0, 250, 0, 60)
-    local jpCorner = Instance.new("UICorner")
-    jpCorner.CornerRadius = UDim.new(0, 8)
-    jpCorner.Parent = jpFrame
-    
-    local jpLabel = Instance.new("TextLabel")
-    jpLabel.Parent = jpFrame
-    jpLabel.BackgroundTransparency = 1
-    jpLabel.Position = UDim2.new(0, 10, 0, 5)
-    jpLabel.Size = UDim2.new(0, 200, 0, 20)
-    jpLabel.Font = Enum.Font.Gotham
-    jpLabel.Text = "Jump Power: " .. Settings.JumpPower
-    jpLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    jpLabel.TextSize = 12
-    jpLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local jpSliderBg = Instance.new("Frame")
-    jpSliderBg.Parent = jpFrame
-    jpSliderBg.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    jpSliderBg.Position = UDim2.new(0, 10, 0, 30)
-    jpSliderBg.Size = UDim2.new(0, 230, 0, 6)
-    
-    local jpSliderFill = Instance.new("Frame")
-    jpSliderFill.Parent = jpSliderBg
-    jpSliderFill.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    jpSliderFill.Size = UDim2.new((Settings.JumpPower - 50) / 100, 0, 1, 0)
-    
-    local function updateJumpPower(value)
-        Settings.JumpPower = math.floor(value)
-        jpLabel.Text = "Jump Power: " .. Settings.JumpPower
-        jpSliderFill.Size = UDim2.new((Settings.JumpPower - 50) / 100, 0, 1, 0)
+    AddSlider("🦘 Jump Power", y, 50, 150, function() return Settings.JumpPower end, function(v)
+        Settings.JumpPower = v
         ApplyMovement()
-    end
-    
-    jpSliderBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            while game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                local mousePos = game.Players.LocalPlayer:GetMouse().X
-                local sliderPos = jpSliderBg.AbsolutePosition.X
-                local percent = math.clamp((mousePos - sliderPos) / jpSliderBg.AbsoluteSize.X, 0, 1)
-                updateJumpPower(50 + (percent * 100))
-                wait()
-            end
-        end
     end)
     y = y + 70
-    
-    AddToggle("Anti AFK", y, function() return Settings.AntiAFK end, function(v)
+    AddToggle("💤 Anti AFK", y, function() return Settings.AntiAFK end, function(v)
         Settings.AntiAFK = v
-        if v then StartAntiAFK() else if afkLoop then afkLoop:Disconnect() afkLoop = nil end end
     end)
     y = y + 55
     
-    AddButton("Rejoin Game", y, function()
+    -- Teleport Section
+    local teleLabel = Instance.new("TextLabel")
+    teleLabel.Parent = scroll
+    teleLabel.BackgroundTransparency = 1
+    teleLabel.Position = UDim2.new(0, 10, 0, y)
+    teleLabel.Size = UDim2.new(0, 280, 0, 25)
+    teleLabel.Font = Enum.Font.GothamBold
+    teleLabel.Text = "📍 Teleport"
+    teleLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    teleLabel.TextSize = 16
+    teleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    y = y + 35
+    
+    local islands = {
+        ["Marine Starter"] = CFrame.new(-386, 73, 255),
+        ["Jungle"] = CFrame.new(-1171, 13, 420),
+        ["Desert"] = CFrame.new(889, 22, -11),
+        ["Snow"] = CFrame.new(1200, 38, -1120),
+        ["Sky Island"] = CFrame.new(-478, 208, 439),
+        ["Prison"] = CFrame.new(3515, 12, -1143),
+        ["Volcano"] = CFrame.new(-1481, 66, 725),
+        ["Cake Land"] = CFrame.new(-1766, 40, -2737),
+        ["Sea of Treats"] = CFrame.new(-2708, 63, -2774)
+    }
+    
+    for name, cf in pairs(islands) do
+        AddButton(name, y, function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = cf
+            end
+        end)
+        y = y + 50
+    end
+    
+    AddButton("🔄 Rejoin Game", y, function()
         TeleportService:Teleport(game.PlaceId)
     end)
-    y = y + 55
+    y = y + 50
     
-    AddButton("Close UI", y, function()
+    AddButton("❌ Close UI", y, function()
         gui:Destroy()
         Settings.AutoFarm = false
         Settings.AutoQuest = false
         Settings.AutoCollect = false
         Settings.AntiAFK = false
-        if farmLoop then farmLoop:Disconnect() farmLoop = nil end
-        if collectLoop then collectLoop:Disconnect() collectLoop = nil end
-        if afkLoop then afkLoop:Disconnect() afkLoop = nil end
     end)
-    y = y + 55
+    y = y + 50
     
     scroll.CanvasSize = UDim2.new(0, 0, 0, y + 20)
 end
 
--- ເລີ່ມຕົ້ນ
+-- ==================== MAIN LOOP ====================
+-- ການເຄື່ອນໄຫວຫຼັກ
+local farmConnection
+local collectConnection
+local afkConnection
+
+local function StartLoops()
+    if farmConnection then farmConnection:Disconnect() end
+    if collectConnection then collectConnection:Disconnect() end
+    if afkConnection then afkConnection:Disconnect() end
+    
+    farmConnection = RunService.RenderStepped:Connect(function()
+        if Settings.AutoFarm then
+            if not LocalPlayer.Character then return end
+            HandleQuest()
+            local target = GetNearestNPC()
+            if target then
+                AttackTarget(target)
+            end
+        end
+    end)
+    
+    collectConnection = RunService.RenderStepped:Connect(function()
+        if Settings.AutoCollect then
+            CollectItems()
+        end
+    end)
+    
+    afkConnection = RunService.RenderStepped:Connect(function()
+        AntiAFK()
+    end)
+end
+
+-- ເລີ່ມ UI ແລະ Loops
 spawn(function()
     wait(1)
     CreateUI()
+    StartLoops()
 end)
 
 -- ກົດ Insert ເພື່ອປິດ/ເປີດ UI
@@ -601,7 +547,7 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, gameProce
     end
 end)
 
--- ປ້ອງກັນການຕົກຕາຍຍ້ອນນ້ຳ
+-- ປ້ອງກັນການຕົກນ້ຳຕາຍ
 pcall(function()
     local water = workspace:FindFirstChild("Water")
     if water then
@@ -609,4 +555,4 @@ pcall(function()
     end
 end)
 
-print("✅ LAM HUB V6 ໂຫຼດສຳເລັດ! ກົດ INSERT ເພື່ອເປີດເມນູ")
+print("✅ LAM HUB V7 ໂຫຼດສຳເລັດ! ກົດ INSERT ເພື່ອເປີດເມນູ")
