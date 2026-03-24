@@ -1,298 +1,418 @@
--- [[ LAM HUB | FLUENT PREMIUM (HYBRID TOGGLE FIX 100%) ]] --
+--[[
+    LAM HUB PREMIUM [ The Memory Fix ]
+    - Modern Rayfield UI (Sidebar, Minimize/Close)
+    - Combat: Smooth Aimbot, Silent Aim (Instant Auto-Headshot)
+    - Hitbox: Hitbox Expander, Antenna Head (Long Head)
+    - Visuals: FOV Circle, Tracers (Red/Yellow Neon)
+    - World: Full Bright (Map Brightness)
+    - Player: WalkSpeed, JumpPower
+    - Optimization: Improved Silent Aim Hook (Fixed Bullet Issue)
+--]]
 
-local CoreGui = game:GetService("CoreGui")
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "LAM HUB PREMIUM",
+   LoadingTitle = "LAM HUB PREMIUM Loading...",
+   LoadingSubtitle = "by Manus AI",
+   ConfigurationAddon = {
+      Enabled = true,
+      FolderName = "LamHub",
+      FileName = "PremiumConfig"
+   },
+   KeySystem = false
+})
+
+-- // Services // --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
+local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
 
--- ==========================================
--- 1. ສ້າງປຸ່ມລອຍແຄບຊູນ (THE TOP BAR)
--- ==========================================
--- ດຶງຄ່າໜ້າຈໍທີ່ປອດໄພທີ່ສຸດສຳລັບມືຖື
-local safeContainer = CoreGui
-pcall(function() if gethui then safeContainer = gethui() end end)
+-- // Global Settings // --
+_G.AimbotEnabled = false
+_G.SilentAimEnabled = false
+_G.TeamCheck = true
+_G.AimPart = "Head"
+_G.Smoothness = 2
+_G.FOVEnabled = false
+_G.FOVRadius = 150
+_G.TracerEnabled = false
+_G.TracerColor = Color3.fromRGB(255, 0, 0)
+_G.FullBright = false
 
-local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = "LAM_PremiumToggle"
-ToggleGui.Parent = safeContainer
-ToggleGui.ResetOnSpawn = false
+-- // Hitbox & Antenna Settings // --
+_G.HitboxEnabled = false
+_G.HitboxSize = 5
+_G.HitboxTransparency = 0.7
+_G.AntennaEnabled = false
+_G.AntennaSize = 20
 
-local TopBar = Instance.new("Frame")
-TopBar.Parent = ToggleGui
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-TopBar.BackgroundTransparency = 0.15
-TopBar.Position = UDim2.new(0.5, -100, 0, 15)
-TopBar.Size = UDim2.new(0, 200, 0, 38)
-TopBar.Active = true
-TopBar.Draggable = true
+-- // Store Original Lighting Settings // --
+local OriginalLighting = {
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    FogEnd = Lighting.FogEnd
+}
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(1, 0)
-UICorner.Parent = TopBar
+-- // Drawing Setup (FOV Circle) // --
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = false
+FOVCircle.Radius = _G.FOVRadius
+FOVCircle.Color = Color3.fromRGB(0, 255, 255)
+FOVCircle.Thickness = 1.5
+FOVCircle.Transparency = 0.5
+FOVCircle.Filled = false
 
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(0, 255, 255)
-UIStroke.Thickness = 1.5
-UIStroke.Parent = TopBar
+-- // Tracer System // --
+local Tracers = {}
 
-local Title = Instance.new("TextLabel")
-Title.Parent = TopBar
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 20, 0, 0)
-Title.Size = UDim2.new(1, -70, 1, 0)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "LAM HUB | V.I.P"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
+local function CreateTracer(player)
+    if Tracers[player] then return Tracers[player] end
+    local Line = Drawing.new("Line")
+    Line.Visible = false
+    Line.Color = _G.TracerColor
+    Line.Thickness = 2
+    Line.Transparency = 1
+    Tracers[player] = Line
+    return Line
+end
 
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Parent = TopBar
-ToggleBtn.BackgroundTransparency = 1
-ToggleBtn.Position = UDim2.new(1, -40, 0, 0)
-ToggleBtn.Size = UDim2.new(0, 30, 1, 0)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.Text = "[ UI ]"
-ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-ToggleBtn.TextSize = 13
+local function RemoveTracer(player)
+    if Tracers[player] then
+        Tracers[player]:Remove()
+        Tracers[player] = nil
+    end
+end
 
--- ==========================================
--- 2. ໂຫຼດ FLUENT UI
--- ==========================================
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+-- // Tabs // --
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+local SilentTab = Window:CreateTab("Silent Aim", 4483362458)
+local HitboxTab = Window:CreateTab("Hitbox", 4483362458)
+local VisualsTab = Window:CreateTab("Visuals", 4483345998)
+local WorldTab = Window:CreateTab("World", 4483362458)
+local PlayerTab = Window:CreateTab("Player", 4483362748)
 
-local Window = Fluent:CreateWindow({
-    Title = "LAM HUB",
-    SubTitle = "[ Premium Mobile ]",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(550, 320),
-    Acrylic = true,
-    Theme = "Darker",
-    MinimizeKey = Enum.KeyCode.RightControl
+-- // Combat Section // --
+CombatTab:CreateSection("Aimbot Settings")
+CombatTab:CreateToggle({
+   Name = "Enable Smooth Aimbot (Mouse Right)",
+   CurrentValue = false,
+   Flag = "AimbotToggle",
+   Callback = function(Value) _G.AimbotEnabled = Value end,
+})
+CombatTab:CreateSlider({
+   Name = "Aimbot Smoothness",
+   Range = {1, 10},
+   Increment = 1,
+   Suffix = "Smooth",
+   CurrentValue = 2,
+   Flag = "SmoothSlider",
+   Callback = function(Value) _G.Smoothness = Value end,
+})
+CombatTab:CreateDropdown({
+   Name = "Target Part",
+   Options = {"Head", "UpperTorso", "HumanoidRootPart"},
+   CurrentOption = "Head",
+   MultipleOptions = false,
+   Flag = "PartDropdown",
+   Callback = function(Option) _G.AimPart = Option[1] end,
+})
+CombatTab:CreateToggle({
+   Name = "Team Check",
+   CurrentValue = true,
+   Flag = "TeamToggle",
+   Callback = function(Value) _G.TeamCheck = Value end,
 })
 
--- ==========================================
--- 3. ລະບົບປິດ/ເປີດ UI ທີ່ແຂງແກ່ນທີ່ສຸດ (HYBRID TOGGLE)
--- ==========================================
-local menuOpen = true
+-- // Silent Aim Section // --
+SilentTab:CreateSection("Silent Aim (Auto Headshot)")
+SilentTab:CreateToggle({
+   Name = "Enable Silent Aim",
+   CurrentValue = false,
+   Flag = "SilentAimToggle",
+   Callback = function(Value) _G.SilentAimEnabled = Value end,
+})
+SilentTab:CreateLabel("Silent Aim redirects bullets to target's head.")
+SilentTab:CreateLabel("No aiming required. Works on Left Click.")
 
-ToggleBtn.MouseButton1Click:Connect(function()
-    menuOpen = not menuOpen
+-- // Hitbox Section // --
+HitboxTab:CreateSection("Hitbox & Antenna")
+HitboxTab:CreateToggle({
+   Name = "Enable Hitbox Expander",
+   CurrentValue = false,
+   Flag = "HitboxToggle",
+   Callback = function(Value) _G.HitboxEnabled = Value end,
+})
+HitboxTab:CreateSlider({
+   Name = "Hitbox Size",
+   Range = {1, 20},
+   Increment = 1,
+   Suffix = "Size",
+   CurrentValue = 5,
+   Flag = "HitboxSizeSlider",
+   Callback = function(Value) _G.HitboxSize = Value end,
+})
+HitboxTab:CreateToggle({
+   Name = "Enable Antenna Head (Long Head)",
+   CurrentValue = false,
+   Flag = "AntennaToggle",
+   Callback = function(Value) _G.AntennaEnabled = Value end,
+})
+HitboxTab:CreateSlider({
+   Name = "Antenna Height",
+   Range = {5, 50},
+   Increment = 5,
+   Suffix = "Height",
+   CurrentValue = 20,
+   Flag = "AntennaSizeSlider",
+   Callback = function(Value) _G.AntennaSize = Value end,
+})
+
+-- // Visuals Section // --
+VisualsTab:CreateSection("ESP & FOV")
+VisualsTab:CreateToggle({
+   Name = "Show FOV Circle",
+   CurrentValue = false,
+   Flag = "FOVToggle",
+   Callback = function(Value) _G.FOVEnabled = Value; FOVCircle.Visible = Value end,
+})
+VisualsTab:CreateSlider({
+   Name = "FOV Radius",
+   Range = {50, 500},
+   Increment = 10,
+   Suffix = "px",
+   CurrentValue = 150,
+   Flag = "FOVSlider",
+   Callback = function(Value) _G.FOVRadius = Value; FOVCircle.Radius = Value end,
+})
+VisualsTab:CreateToggle({
+   Name = "Enable Tracers (Line View)",
+   CurrentValue = false,
+   Flag = "TracerToggle",
+   Callback = function(Value)
+      _G.TracerEnabled = Value
+      if not Value then for _, line in pairs(Tracers) do line.Visible = false end end
+   end,
+})
+VisualsTab:CreateDropdown({
+   Name = "Tracer Color",
+   Options = {"Deep Red", "Neon Yellow", "Cyan", "White"},
+   CurrentOption = "Deep Red",
+   MultipleOptions = false,
+   Flag = "ColorDropdown",
+   Callback = function(Option)
+      if Option[1] == "Deep Red" then _G.TracerColor = Color3.fromRGB(255, 0, 0)
+      elseif Option[1] == "Neon Yellow" then _G.TracerColor = Color3.fromRGB(255, 255, 0)
+      elseif Option[1] == "Cyan" then _G.TracerColor = Color3.fromRGB(0, 255, 255)
+      elseif Option[1] == "White" then _G.TracerColor = Color3.fromRGB(255, 255, 255) end
+   end,
+})
+
+-- // World Section // --
+WorldTab:CreateSection("Map Lighting")
+WorldTab:CreateToggle({
+   Name = "Full Bright",
+   CurrentValue = false,
+   Flag = "FullBrightToggle",
+   Callback = function(Value)
+      _G.FullBright = Value
+      if not Value then
+          Lighting.Ambient = OriginalLighting.Ambient
+          Lighting.OutdoorAmbient = OriginalLighting.OutdoorAmbient
+          Lighting.Brightness = OriginalLighting.Brightness
+          Lighting.ClockTime = OriginalLighting.ClockTime
+      end
+   end,
+})
+
+-- // Player Section // --
+PlayerTab:CreateSection("Player Mods")
+PlayerTab:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {16, 200},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "SpeedSlider",
+   Callback = function(Value)
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+          LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      end
+   end,
+})
+PlayerTab:CreateSlider({
+   Name = "JumpPower",
+   Range = {50, 500},
+   Increment = 1,
+   Suffix = "Power",
+   CurrentValue = 50,
+   Flag = "JumpSlider",
+   Callback = function(Value)
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+          LocalPlayer.Character.Humanoid.JumpPower = Value
+      end
+   end,
+})
+
+-- // Core Logic // --
+local function GetClosestPlayer()
+    local Target = nil
+    local MaxDist = _G.FOVRadius
+    local MousePos = UserInputService:GetMouseLocation()
     
-    -- ປ່ຽນສີປຸ່ມໃຫ້ຮູ້ສະຖານະ
-    if menuOpen then
-        UIStroke.Color = Color3.fromRGB(0, 255, 255)
-        ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-    else
-        UIStroke.Color = Color3.fromRGB(255, 50, 50)
-        ToggleBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
-    end
-
-    -- ວິທີທີ 1: ໃຊ້ລະບົບ Hardware Keypress ຂອງຕົວລັນມືຖື (Delta/Codex)
-    local keySuccess = pcall(function()
-        if keypress and keyrelease then
-            keypress(0xA3) -- ລະຫັດປຸ່ມ Right Control
-            task.wait(0.05)
-            keyrelease(0xA3)
-            return true
-        end
-        return false
-    end)
-
-    -- ວິທີທີ 2: ໃຊ້ລະບົບ Virtual Input ຂອງ Roblox
-    if not keySuccess then
-        pcall(function()
-            local vim = game:GetService("VirtualInputManager")
-            vim:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
-            task.wait(0.05)
-            vim:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
-        end)
-    end
-
-    -- ວິທີທີ 3: ໃຊ້ກຳລັງບັງຄັບປິດໜ້າຈໍ (Brute-Force) ເຮັດວຽກແນ່ນອນ 100%
-    pcall(function()
-        local containers = {CoreGui}
-        if gethui then table.insert(containers, gethui()) end
-        
-        for _, container in ipairs(containers) do
-            for _, gui in pairs(container:GetChildren()) do
-                -- Fluent UI ຈະມີ Frame ທີ່ຊື່ວ່າ "Window" ສະເໝີ
-                if gui:IsA("ScreenGui") and gui.Name ~= "LAM_PremiumToggle" then
-                    if gui:FindFirstChild("Window") then
-                        gui.Enabled = menuOpen
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer and Player.Character and Player.Character:FindFirstChild(_G.AimPart) then
+            local Humanoid = Player.Character:FindFirstChild("Humanoid")
+            if Humanoid and Humanoid.Health > 0 then
+                if _G.TeamCheck and Player.Team == LocalPlayer.Team then continue end
+                
+                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Player.Character[_G.AimPart].Position)
+                if OnScreen then
+                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
+                    if Dist < MaxDist then
+                        MaxDist = Dist
+                        Target = Player
                     end
                 end
             end
         end
-    end)
-end)
-
--- ==========================================
--- 4. ຕັ້ງຄ່າເມນູຕ່າງໆ (FEATURES)
--- ==========================================
-local Config = {
-    Aim = false, HardLock = false, Smooth = 0.2, Part = "Head",
-    Team = true, Wall = true, Trigger = false,
-    Hitbox = false, HitSize = 5, HitTrans = 0.6,
-    FOV = false, FOVRad = 150, ESPLine = false,
-    Speed = 16, Jump = 50, InfJump = false, Noclip = false
-}
-
-local Tabs = {
-    Combat = Window:AddTab({ Title = "Combat", Icon = "swords" }),
-    Visuals = Window:AddTab({ Title = "Visuals", Icon = "eye" }),
-    Player = Window:AddTab({ Title = "Player", Icon = "user" })
-}
-
--- [ COMBAT ]
-Tabs.Combat:AddToggle("Aim", {Title = "Enable Aimbot", Default = false}):OnChanged(function(v) Config.Aim = v end)
-Tabs.Combat:AddToggle("Hard", {Title = "Hard Lock (Instant)", Default = false}):OnChanged(function(v) Config.HardLock = v end)
-Tabs.Combat:AddSlider("Smooth", {Title = "Smoothness", Default = 0.2, Min = 0.01, Max = 1, Rounding = 2}):OnChanged(function(v) Config.Smooth = v end)
-Tabs.Combat:AddDropdown("Part", {Title = "Target Part", Values = {"Head", "HumanoidRootPart"}, Default = 1}):OnChanged(function(v) Config.Part = v end)
-Tabs.Combat:AddToggle("Team", {Title = "Team Check", Default = true}):OnChanged(function(v) Config.Team = v end)
-Tabs.Combat:AddToggle("Wall", {Title = "Wall Check", Default = true}):OnChanged(function(v) Config.Wall = v end)
-
-Tabs.Combat:AddToggle("Hitbox", {Title = "Enable Hitbox", Default = false}):OnChanged(function(v) 
-    Config.Hitbox = v 
-    if not v then
-        pcall(function()
-            for _, p in pairs(Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("Head") then
-                    p.Character.Head.Size = Vector3.new(1.2, 1.2, 1.2)
-                    p.Character.Head.Transparency = 0
-                end
-            end
-        end)
     end
-end)
-Tabs.Combat:AddSlider("HSize", {Title = "Hitbox Size", Default = 5, Min = 2, Max = 20, Rounding = 0}):OnChanged(function(v) Config.HitSize = v end)
-
--- [ VISUALS ]
-Tabs.Visuals:AddToggle("ESPLine", {Title = "ESP Tracers (Lines)", Default = false}):OnChanged(function(v) Config.ESPLine = v end)
-Tabs.Visuals:AddToggle("FOV", {Title = "Show FOV Circle", Default = false}):OnChanged(function(v) Config.FOV = v end)
-Tabs.Visuals:AddSlider("FRad", {Title = "FOV Radius", Default = 150, Min = 50, Max = 800, Rounding = 0}):OnChanged(function(v) Config.FOVRad = v end)
-
--- [ PLAYER (BYPASS MODE) ]
-Tabs.Player:AddSlider("WS", {Title = "WalkSpeed (Bypass Mode)", Default = 16, Min = 16, Max = 100, Rounding = 0}):OnChanged(function(v) Config.Speed = v end)
-Tabs.Player:AddSlider("JP", {Title = "JumpPower", Default = 50, Min = 50, Max = 300, Rounding = 0}):OnChanged(function(v) Config.Jump = v end)
-Tabs.Player:AddToggle("InfJ", {Title = "Infinite Jump (Fly)", Default = false}):OnChanged(function(v) Config.InfJump = v end)
-Tabs.Player:AddToggle("Noclip", {Title = "Noclip (Walk through walls)", Default = false}):OnChanged(function(v) Config.Noclip = v end)
-
--- ==========================================
--- 5. BACKEND LOGIC (ລະບົບໂກງແລ່ນໄວ ແລະ ອື່ນໆ)
--- ==========================================
-local hasDraw = pcall(function() local t = Drawing.new("Line") t:Remove() end)
-local FOVCircle
-if hasDraw then
-    FOVCircle = Drawing.new("Circle")
-    FOVCircle.Thickness = 2; FOVCircle.Color = Color3.fromRGB(0, 255, 255)
-    FOVCircle.Filled = false; FOVCircle.Transparency = 1; FOVCircle.Visible = false
+    return Target
 end
 
-local ESP_L = {}
-Players.PlayerRemoving:Connect(function(p)
-    if ESP_L[p] then ESP_L[p]:Remove() ESP_L[p] = nil end
-end)
+-- Silent Aim Hook (Advanced Hooking for Bullet Redirection)
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+local oldIndex = mt.__index
+setreadonly(mt, false)
 
-local function IsValid(p)
-    if not Config.Team then return true end
-    if p.Team and LocalPlayer.Team and p.Team == LocalPlayer.Team then return false end
-    return true
-end
-
-local function IsVisible(part)
-    if not Config.Wall then return true end 
-    local ray = RaycastParams.new()
-    ray.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
-    ray.FilterType = Enum.RaycastFilterType.Blacklist
-    local res = workspace:Raycast(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000, ray)
-    if not res or res.Instance:IsDescendantOf(part.Parent) then return true end return false
-end
-
-UserInputService.JumpRequest:Connect(function()
-    if Config.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
-
-RunService.RenderStepped:Connect(function(deltaTime)
-    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local target, shortest = nil, Config.FOVRad
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
     
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hum = LocalPlayer.Character.Humanoid
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        
-        if Config.Speed > 16 then
-            hum.WalkSpeed = 16 
-            if hum.MoveDirection.Magnitude > 0 then
-                hrp.CFrame = hrp.CFrame + (hum.MoveDirection * ((Config.Speed - 16) * deltaTime))
+    if _G.SilentAimEnabled and (method == "FindPartOnRayWithIgnoreList" or method == "Raycast" or method == "FindPartOnRay") then
+        local Target = GetClosestPlayer()
+        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
+            local HeadPos = Target.Character.Head.Position
+            if method == "FindPartOnRayWithIgnoreList" or method == "FindPartOnRay" then
+                args[1] = Ray.new(Camera.CFrame.Position, (HeadPos - Camera.CFrame.Position).Unit * 1000)
+            elseif method == "Raycast" then
+                args[2] = (HeadPos - args[1]).Unit * 1000
             end
-        else
-            hum.WalkSpeed = 16
-        end
-        hum.JumpPower = Config.Jump
-    end
-
-    if Config.Noclip and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+            return oldNamecall(self, unpack(args))
         end
     end
+    return oldNamecall(self, ...)
+end)
 
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and IsValid(v) and v.Character and v.Character:FindFirstChild(Config.Part) and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            local part = v.Character[Config.Part]
-            local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
-            if onScreen then
-                local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                if dist < shortest and IsVisible(part) then target = v; shortest = dist end
+-- Hook Index for Mouse.Hit/Mouse.Target (Works in many games)
+mt.__index = newcclosure(function(self, index)
+    if _G.SilentAimEnabled and (index == "Hit" or index == "Target") and self == Mouse then
+        local Target = GetClosestPlayer()
+        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
+            if index == "Hit" then
+                return Target.Character.Head.CFrame
+            elseif index == "Target" then
+                return Target.Character.Head
             end
         end
     end
+    return oldIndex(self, index)
+end)
 
-    if Config.Aim and target then
-        pcall(function()
-            local tPos = target.Character[Config.Part].Position
-            if Config.HardLock then Camera.CFrame = CFrame.new(Camera.CFrame.Position, tPos)
-            else Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, tPos), Config.Smooth) end
-        end)
+setreadonly(mt, true)
+
+local IsAiming = false
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then IsAiming = true end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then IsAiming = false end
+end)
+
+-- Main Loop (Optimized)
+RunService.RenderStepped:Connect(function()
+    if _G.FOVEnabled then FOVCircle.Position = UserInputService:GetMouseLocation() end
+    
+    if _G.FullBright then
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
     end
-
-    if hasDraw and FOVCircle then
-        FOVCircle.Visible = Config.FOV; FOVCircle.Position = center; FOVCircle.Radius = Config.FOVRad
-        FOVCircle.Color = target and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 255)
+    
+    local Target = GetClosestPlayer()
+    
+    -- Smooth Aimbot
+    if _G.AimbotEnabled and IsAiming and Target then
+        local TargetPos, OnScreen = Camera:WorldToViewportPoint(Target.Character[_G.AimPart].Position)
+        if OnScreen then
+            local MousePos = UserInputService:GetMouseLocation()
+            mousemoverel((TargetPos.X - MousePos.X) / _G.Smoothness, (TargetPos.Y - MousePos.Y) / _G.Smoothness)
+        end
     end
-
-    if Config.Hitbox then
-        pcall(function()
-            for _, v in pairs(Players:GetPlayers()) do
-                if v ~= LocalPlayer and IsValid(v) and v.Character and v.Character:FindFirstChild("Head") then
-                    v.Character.Head.Size = Vector3.new(Config.HitSize, Config.HitSize, Config.HitSize)
-                    v.Character.Head.Transparency = Config.HitTrans
-                    v.Character.Head.CanCollide = false
+    
+    -- Hitbox & Tracers
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local Head = p.Character:FindFirstChild("Head")
+            local HRP = p.Character:FindFirstChild("HumanoidRootPart")
+            local Humanoid = p.Character:FindFirstChild("Humanoid")
+            
+            if Head and Humanoid and Humanoid.Health > 0 then
+                local isEnemy = not (_G.TeamCheck and p.Team == LocalPlayer.Team)
+                
+                if isEnemy then
+                    if _G.HitboxEnabled then
+                        Head.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                        Head.Transparency = _G.HitboxTransparency
+                        Head.CanCollide = false
+                    elseif _G.AntennaEnabled then
+                        Head.Size = Vector3.new(1.2, _G.AntennaSize, 1.2)
+                        Head.Transparency = 0.5
+                        Head.CanCollide = false
+                    else
+                        Head.Size = Vector3.new(1.2, 1.2, 1.2)
+                        Head.Transparency = 0
+                        Head.CanCollide = true
+                    end
+                else
+                    Head.Size = Vector3.new(1.2, 1.2, 1.2)
+                    Head.Transparency = 0
                 end
+                
+                if _G.TracerEnabled and HRP and isEnemy then
+                    local Pos, OnScreen = Camera:WorldToViewportPoint(HRP.Position)
+                    local Tracer = CreateTracer(p)
+                    if OnScreen then
+                        Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        Tracer.To = Vector2.new(Pos.X, Pos.Y)
+                        Tracer.Color = _G.TracerColor
+                        Tracer.Visible = true
+                    else
+                        Tracer.Visible = false
+                    end
+                elseif Tracers[p] then
+                    Tracers[p].Visible = false
+                end
+            elseif Tracers[p] then
+                Tracers[p].Visible = false
             end
-        end)
-    end
-
-    if hasDraw then
-        if Config.ESPLine then
-            for _, v in pairs(Players:GetPlayers()) do
-                if v ~= LocalPlayer and IsValid(v) and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-                    local pos, onScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                    if not ESP_L[v] then ESP_L[v] = Drawing.new("Line"); ESP_L[v].Thickness = 1.5; ESP_L[v].Color = Color3.fromRGB(255, 50, 50); ESP_L[v].Transparency = 1 end
-                    if onScreen then ESP_L[v].From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y); ESP_L[v].To = Vector2.new(pos.X, pos.Y); ESP_L[v].Visible = true
-                    else ESP_L[v].Visible = false end
-                else if ESP_L[v] then ESP_L[v].Visible = false end end
-            end
-        else for _, l in pairs(ESP_L) do l.Visible = false end end
+        end
     end
 end)
 
-Window:SelectTab(1)
-Fluent:Notify({ Title = "SUCCESS", Content = "ລະບົບ Hybrid Toggle ເປີດໃຊ້ແລ້ວ! ກົດ [ UI ] ໄດ້ເລີຍ.", Duration = 5 })
+Players.PlayerRemoving:Connect(function(p) RemoveTracer(p) end)
 
+Rayfield:Notify({
+   Title = "LAM HUB PREMIUM Loaded!",
+   Content = "Silent Aim & Bullet Fix Active!",
+   Duration = 5,
+   Image = 4483362458,
+})
